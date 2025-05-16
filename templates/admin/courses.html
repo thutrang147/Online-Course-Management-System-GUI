@@ -22,7 +22,9 @@
             <tr>
                 <td>{{ course.CourseID }}</td>
                 <td>{{ course.CourseName }}</td>
-                <td>{{ course.CourseDescription }}</td>
+                <td>
+                    {{ course.Description }}
+                </td>
                 <td>
                     {% if course.InstructorName %}
                         {{ course.InstructorName }}
