@@ -578,7 +578,6 @@ def admin_instructor_detail(instructor_id):
 @role_required(['admin'])
 def admin_courses():
     courses = course_manager.list_courses_with_details()
-    print(courses)
     return render_template('admin/courses.html', courses=courses)
 
 @app.route('/admin/course/<int:course_id>', methods=['GET', 'POST'])

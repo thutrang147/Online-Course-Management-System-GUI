@@ -1,5 +1,6 @@
 from utils.db_connector import create_connection
 from mysql.connector import Error
+import bcrypt
 
 def add_learner(name, email, phone, password):
     """Add a new learner with user account."""
@@ -11,9 +12,11 @@ def add_learner(name, email, phone, password):
     
     try:
         connection.start_transaction()
+        # Delete if too buggy 
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # 1. Create user account first
-        user_id = user_manager.create_user(email, password, 'learner')
+        user_id = user_manager.create_user(email, hashed, 'learner')
         if not user_id:
             connection.rollback()
             print("Failed to create user account.")

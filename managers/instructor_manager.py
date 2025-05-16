@@ -1,5 +1,6 @@
 from utils.db_connector import create_connection
 from mysql.connector import Error
+import bcrypt
 
 def add_instructor(name, expertise, email, password):
     """Add a new instructor with user account."""
@@ -11,9 +12,12 @@ def add_instructor(name, expertise, email, password):
     
     try:
         connection.start_transaction()
-        
+
+        # Delete if too buggy 
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
         # 1. Create user account first
-        user_id = user_manager.create_user(email, password, 'instructor')
+        user_id = user_manager.create_user(email, hashed, 'instructor')
         if not user_id:
             connection.rollback()
             return None
