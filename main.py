@@ -450,15 +450,26 @@ def instructor_edit_lecture(lecture_id):
     if not course or course.get('InstructorID') != instructor_id:
         flash('You do not have permission to edit this lecture.', 'warning')
         return redirect(url_for('instructor_courses'))
+
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        success = lecture_manager.update_lecture_content(lecture_id, title=title, content=content)
-        if success:
-            flash('Lecture updated successfully!', 'success')
-            return redirect(url_for('instructor_course_detail', course_id=course_id))
+        if 'delete' in request.form:
+            # Handle lecture deletion
+            success = lecture_manager.delete_lecture(lecture_id)
+            if success:
+                flash('Lecture deleted successfully!', 'success')
+                return redirect(url_for('instructor_course_detail', course_id=course_id))
+            else:
+                flash('Failed to delete the lecture.', 'danger')
         else:
-            flash('Failed to update the lecture.', 'danger')
+            # Handle lecture update
+            title = request.form['title']
+            content = request.form['content']
+            success = lecture_manager.update_lecture_content(lecture_id, title=title, content=content)
+            if success:
+                flash('Lecture updated successfully!', 'success')
+                return redirect(url_for('instructor_course_detail', course_id=course_id))
+            else:
+                flash('Failed to update the lecture.', 'danger')
     return render_template('instructor/edit_lecture.html', lecture=lecture, course=course)
 
 @app.route('/instructor/profile', methods=['GET', 'POST'])
@@ -515,29 +526,40 @@ def admin_learners():
 @role_required(['admin'])
 def admin_learner_detail(learner_id):
     learner = learner_manager.get_learner_by_id(learner_id)
-    
+
     if not learner:
         flash('Learner does not exist.', 'danger')
         return redirect(url_for('admin_learners'))
-    
+
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
-        
-        success = learner_manager.update_learner_info(
-            learner_id, name=name, email=email, phone=phone)
-        
-        if success:
-            flash('Learner information updated successfully!', 'success')
+        if 'delete' in request.form:
+            # Handle learner deletion
+            success = learner_manager.delete_learner(learner_id)
+            if success:
+                flash('Learner deleted successfully!', 'success')
+                return redirect(url_for('admin_learners'))
+            else:
+                flash('Failed to delete learner.', 'danger')
+                return redirect(url_for('admin_learner_detail', learner_id=learner_id))
         else:
-            flash('Failed to update learner information.', 'danger')
-            
-        return redirect(url_for('admin_learner_detail', learner_id=learner_id))
-        
+            # Handle update
+            name = request.form['name']
+            email = request.form['email']
+            phone = request.form['phone']
+
+            success = learner_manager.update_learner_info(
+                learner_id, name=name, email=email, phone=phone)
+
+            if success:
+                flash('Learner information updated successfully!', 'success')
+            else:
+                flash('Failed to update learner information.', 'danger')
+
+            return redirect(url_for('admin_learner_detail', learner_id=learner_id))
+
     enrollments = enrollment_manager.get_enrollments_by_learner(learner_id)
-    
-    return render_template('admin/learner_detail.html', 
+
+    return render_template('admin/learner_detail.html',
                           learner=learner,
                           enrollments=enrollments)
 
@@ -558,21 +580,33 @@ def admin_instructor_detail(instructor_id):
         return redirect(url_for('admin_instructors'))
 
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        expertise = request.form['expertise']
-
-        success = instructor_manager.update_instructor_info(
-            instructor_id, name=name, email=email, expertise=expertise
-        )
-
-        if success:
-            flash('Instructor information updated successfully!', 'success')
+        if 'delete' in request.form:
+            # Handle instructor deletion
+            success = instructor_manager.delete_instructor(instructor_id)
+            if success:
+                flash('Instructor deleted successfully!', 'success')
+                return redirect(url_for('admin_instructors'))
+            else:
+                flash('Failed to delete instructor.', 'danger')
+                return redirect(url_for('admin_instructor_detail', instructor_id=instructor_id))
         else:
-            flash('Failed to update instructor information.', 'danger')
-        return redirect(url_for('admin_instructor_detail', instructor_id=instructor_id))
+            # Handle update
+            name = request.form['name']
+            email = request.form['email']
+            expertise = request.form['expertise']
+
+            success = instructor_manager.update_instructor_info(
+                instructor_id, name=name, email=email, expertise=expertise
+            )
+
+            if success:
+                flash('Instructor information updated successfully!', 'success')
+            else:
+                flash('Failed to update instructor information.', 'danger')
+            return redirect(url_for('admin_instructor_detail', instructor_id=instructor_id))
 
     return render_template('admin/instructor_detail.html', instructor=instructor)
+
 @app.route('/admin/courses')
 @login_required
 @role_required(['admin'])
@@ -591,24 +625,35 @@ def admin_course_detail(course_id):
         return redirect(url_for('admin_courses'))
     
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        instructor_id = request.form.get('instructor', '')
-        
-        if instructor_id == '':
-            instructor_id = None
+        if 'delete' in request.form:
+            # Handle course deletion
+            success = course_manager.delete_course(course_id)
+            if success:
+                flash('Course deleted successfully!', 'success')
+                return redirect(url_for('admin_courses'))
+            else:
+                flash('Failed to delete course.', 'danger')
+                return redirect(url_for('admin_course_detail', course_id=course_id))
         else:
-            instructor_id = int(instructor_id)
+            # Handle update
+            name = request.form['name']
+            description = request.form['description']
+            instructor_id = request.form.get('instructor', '')
             
-        success = course_manager.update_course_info(
-            course_id, name=name, description=description, instructor_id=instructor_id)
-        
-        if success:
-            flash('Course information updated successfully!', 'success')
-        else:
-            flash('Failed to update course information.', 'danger')
+            if instructor_id == '':
+                instructor_id = None
+            else:
+                instructor_id = int(instructor_id)
+                
+            success = course_manager.update_course_info(
+                course_id, name=name, description=description, instructor_id=instructor_id)
             
-        return redirect(url_for('admin_course_detail', course_id=course_id))
+            if success:
+                flash('Course information updated successfully!', 'success')
+            else:
+                flash('Failed to update course information.', 'danger')
+                
+            return redirect(url_for('admin_course_detail', course_id=course_id))
         
     instructors = instructor_manager.list_all_instructors()
     lectures = lecture_manager.get_lectures_by_course(course_id)
@@ -619,6 +664,79 @@ def admin_course_detail(course_id):
                           instructors=instructors,
                           lectures=lectures,
                           enrollments=enrollments)
+
+# Add to main.py
+
+@app.route('/admin/lecture/<int:lecture_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_edit_lecture(lecture_id):
+    lecture = lecture_manager.get_lecture_by_id(lecture_id)
+    if not lecture:
+        flash('Lecture does not exist.', 'danger')
+        return redirect(url_for('admin_courses'))
+    course_id = lecture.get('CourseID')
+    course = course_manager.get_course_by_id(course_id)
+    if not course:
+        flash('Course does not exist.', 'danger')
+        return redirect(url_for('admin_courses'))
+
+    if request.method == 'POST':
+        if 'delete' in request.form:
+            success = lecture_manager.delete_lecture(lecture_id)
+            if success:
+                flash('Lecture deleted successfully!', 'success')
+                return redirect(url_for('admin_course_detail', course_id=course_id))
+            else:
+                flash('Failed to delete the lecture.', 'danger')
+                return redirect(url_for('admin_edit_lecture', lecture_id=lecture_id))
+        else:
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            if not title or not content:
+                flash('Title and content are required.', 'danger')
+            else:
+                success = lecture_manager.update_lecture_content(lecture_id, title=title, content=content)
+                if success:
+                    flash('Lecture updated successfully!', 'success')
+                    return redirect(url_for('admin_course_detail', course_id=course_id))
+                else:
+                    flash('Failed to update the lecture.', 'danger')
+    return render_template('admin/edit_lecture.html', lecture=lecture, course=course)
+
+@app.route('/admin/lecture/view/<int:lecture_id>')
+@login_required
+@role_required(['admin'])
+def admin_view_lecture(lecture_id):
+    lecture = lecture_manager.get_lecture_by_id(lecture_id)
+    if not lecture:
+        flash('Lecture does not exist.', 'danger')
+        return redirect(url_for('admin_courses'))
+    course = course_manager.get_course_by_id(lecture['CourseID'])
+    return render_template('admin/view_lecture.html', lecture=lecture, course=course)
+
+@app.route('/admin/lecture/add/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_add_lecture(course_id):
+    course = course_manager.get_course_by_id(course_id)
+    if not course:
+        flash('Course does not exist.', 'danger')
+        return redirect(url_for('admin_courses'))
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        if not title or not content:
+            flash('Title and content are required.', 'danger')
+        else:
+            lecture_id = lecture_manager.add_lecture(course_id, title, content)
+            if lecture_id:
+                flash('Lecture added successfully!', 'success')
+                return redirect(url_for('admin_course_detail', course_id=course_id))
+            else:
+                flash('Failed to add lecture.', 'danger')
+    return render_template('admin/add_lecture.html', course=course)
 
 @app.route('/admin/reports')
 @login_required

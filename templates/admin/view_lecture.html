@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}View Lecture | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lecture Details</h2>
+    <div class="mb-3">
+        <label class="form-label fw-bold">Lecture Title:</label>
+        <div>{{ lecture.Title }}</div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-bold">Course:</label>
+        <div>
+            {% if course %}
+                {{ course.CourseName }}
+            {% else %}
+                <span class="text-muted">Unknown</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-bold">Content:</label>
+        <div class="border rounded p-3 bg-light" style="white-space: pre-line;">{{ lecture.Content }}</div>
+    </div>
+    <a href="{{ url_for('admin_course_detail', course_id=course.CourseID) }}" class="btn btn-secondary">Back to Course</a>
+</div>
+{% endblock %}

@@ -9,6 +9,9 @@
             <h1>Xin chào, {{ instructor.InstructorName }}!</h1>
             <p class="text-muted">Specialization: {{ instructor.Expertise }}</p>
         </div>
+        <div class="col-md-4 d-flex align-items-start justify-content-end">
+            <a href="{{ url_for('instructor_profile') }}" class="btn btn-outline-primary mt-2">My Profile</a>
+        </div>
     </div>
 
     <div class="row mb-4">

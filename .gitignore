@@ -6,3 +6,5 @@ venv/
 Online-Course-Management-System-GUI/utils/db_connector.py
 Online-Course-Management-System-GUI/utils/db_connector.pyc
 Online-Course-Management-System-GUI/utils/db_connector.py~
+__pycache__/
+*.pyc

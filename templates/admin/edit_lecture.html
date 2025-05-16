@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Lecture | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Lecture</h2>
+    {% if lecture and course %}
+    <form method="post">
+        <div class="mb-3">
+            <label for="title" class="form-label">Lecture Title</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ lecture.Title or '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Content</label>
+            <textarea class="form-control" id="content" name="content" rows="8" required>{{ lecture.Content or '' }}</textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Lecture</button>
+            <a href="{{ url_for('admin_course_detail', course_id=course.CourseID) }}" class="btn btn-secondary">Back to Course</a>
+            <button type="submit" name="delete" value="1" class="btn btn-danger"
+                onclick="return confirm('Are you sure you want to delete this lecture? This action cannot be undone.');">
+                Delete Lecture
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-danger mt-4">Lecture or course information is missing.</div>
+    {% endif %}
+</div>
+{% endblock %}

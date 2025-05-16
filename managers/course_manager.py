@@ -201,3 +201,20 @@ def get_recommended_courses(learner_id, limit=3):
         return []
     finally:
         connection.close()
+
+def delete_course(course_id):
+    """Delete a course from the Courses table."""
+    connection = create_connection()
+    if not connection:
+        return False
+    try:
+        with connection.cursor() as cursor:
+            query = "DELETE FROM Courses WHERE CourseID = %s"
+            cursor.execute(query, (course_id,))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Error as e:
+        print(f"Error deleting course: {e}")
+        return False
+    finally:
+        connection.close()

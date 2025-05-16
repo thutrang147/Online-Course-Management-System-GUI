@@ -29,8 +29,40 @@
         <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">Update Course</button>
             <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">Back to Courses</a>
+            <button type="submit" name="delete" value="1" class="btn btn-danger"
+                onclick="return confirm('Are you sure you want to delete this course? This action cannot be undone.');">
+                Delete Course
+            </button>
         </div>
     </form>
+    <hr>
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h4 class="mb-0">Lectures</h4>
+        <a href="{{ url_for('admin_add_lecture', course_id=course.CourseID) }}" class="btn btn-success btn-sm">Add Lecture</a>
+    </div>
+    {% if lectures and lectures|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Lecture Title</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lecture in lectures %}
+            <tr>
+                <td>{{ lecture.Title }}</td>
+                <td>
+                    <a href="{{ url_for('admin_edit_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="{{ url_for('admin_view_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-info">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No lectures found for this course.</p>
+    {% endif %}
     <hr>
     <h4 class="mt-4">Enrolled Learners</h4>
     {% if enrollments and enrollments|length > 0 %}
