@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Lecture | {{ course.CourseName }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Lecture for "{{ course.CourseName }}"</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="title" class="form-label">Lecture Title</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ lecture.Title }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Lecture Content</label>
+            <textarea class="form-control" id="content" name="content" rows="6" required>{{ lecture.Content }}</textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Lecture</button>
+            <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-secondary">Back to Course</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

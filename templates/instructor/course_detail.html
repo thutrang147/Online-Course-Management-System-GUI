@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor | {{ course.CourseName }} Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ course.CourseName }}</h1>
+    <p class="text-muted">{{ course.CourseDescription }}</p>
+
+    <div class="mb-4">
+        <a href="{{ url_for('instructor_add_lecture', course_id=course.CourseID) }}" class="btn btn-primary">Add Lecture</a>
+        <a href="{{ url_for('instructor_dashboard') }}" class="btn btn-secondary">Back to My Courses</a>
+    </div>
+
+    <h3>Lectures</h3>
+    {% if lectures and lectures|length > 0 %}
+    <ul class="list-group mb-4">
+        {% for lecture in lectures %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ lecture.Title }}</span>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('instructor_view_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-outline-info">View</a>
+                <a href="{{ url_for('instructor_edit_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No lectures have been added to this course yet.</p>
+    {% endif %}
+
+    <h3>Enrolled Learners</h3>
+    {% if enrollments and enrollments|length > 0 %}
+    <ul class="list-group">
+        {% for enrollment in enrollments %}
+        <li class="list-group-item">
+            Learner ID: {{ enrollment.LearnerID }}
+            {% if enrollment.LearnerName %}
+                - {{ enrollment.LearnerName }}
+            {% endif %}
+            {% if enrollment.EnrollmentDate %}
+                <span class="text-muted"> (Enrolled: {{ enrollment.EnrollmentDate }})</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No learners have enrolled in this course yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

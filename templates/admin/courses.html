@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Courses | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Courses</h2>
+    <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary mb-3">Add Course</a>
+    {% if courses and courses|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Course ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Instructor</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course.CourseID }}</td>
+                <td>{{ course.CourseName }}</td>
+                <td>{{ course.CourseDescription }}</td>
+                <td>
+                    {% if course.InstructorName %}
+                        {{ course.InstructorName }}
+                    {% else %}
+                        <span class="text-muted">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-info">Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No courses found.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -191,7 +191,7 @@ def get_all_instructors_workload():
     try:
         with connection.cursor(dictionary=True) as cursor:
             query = """
-            SELECT i.InstructorID, i.InstructorName, i.Expertise,
+            SELECT i.InstructorID, i.InstructorName, i.Email, i.Expertise,
                    COUNT(DISTINCT c.CourseID) as CourseCount,
                    COUNT(DISTINCT e.LearnerID) as LearnerCount,
                    COUNT(DISTINCT l.LectureID) as LectureCount

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}View Lecture | {{ course.CourseName }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ lecture.Title }}</h2>
+    <div class="mb-4">
+        <p>{{ lecture.Content }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-secondary">Back to Course</a>
+        <a href="{{ url_for('instructor_edit_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-warning">Edit Lecture</a>
+    </div>
+</div>
+{% endblock %}

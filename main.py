@@ -64,7 +64,8 @@ def login():
         
         user = User(user_dict)
         login_user(user)
-        
+        # Set UserID in session for later use (e.g., password change)
+        session['UserID'] = user.id
         # Lưu role vào session
         role = user_dict.get('Role', user_dict.get('role'))
         session['role'] = role
@@ -184,24 +185,32 @@ def learner_courses():
 @role_required(['learner'])
 def learner_course_detail(course_id):
     learner_id = session.get('entity_id')
-    
-    # Check if learner is enrolled
+    print(f"learner_id: {learner_id}")
+    if not learner_id:
+        flash('Session expired. Please log in again.', 'danger')
+        return redirect(url_for('login'))
+
     enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+    print(f"enrollment: {enrollment}")
     if not enrollment:
         flash('Bạn chưa đăng ký khóa học này.', 'warning')
         return redirect(url_for('learner_courses'))
-    
-    # Get course details
+
     course = course_manager.get_course_by_id(course_id)
-    
-    # Get lectures with view status
+    print(f"course: {course}")
+    if not course:
+        flash('Course not found.', 'danger')
+        return redirect(url_for('learner_courses'))
+
     lectures = lecture_manager.get_lectures_with_view_status(learner_id, course_id)
-    
+    print(f"lectures: {lectures}")
+    if lectures is None:
+        lectures = []
+
     return render_template('learner/course_detail.html', 
                            course=course,
                            lectures=lectures,
                            enrollment=enrollment)
-
 @app.route('/learner/lecture/<int:lecture_id>')
 @login_required
 @role_required(['learner'])
@@ -235,7 +244,7 @@ def learner_profile():
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
-        
+        print(f"Debug - Learner profile update - name: {name}, phone: {phone}")
         success = learner_manager.update_learner_info(
             learner_id, name=name, phone=phone)
         
@@ -245,7 +254,7 @@ def learner_profile():
             flash('Failed to update information.', 'danger')
             
         return redirect(url_for('learner_profile'))
-        
+    learner = learner_manager.get_learner_by_id(learner_id)
     return render_template('learner/profile.html', learner=learner)
 
 @app.route('/learner/change-password', methods=['GET', 'POST'])
@@ -260,10 +269,13 @@ def change_password():
             flash('New passwords do not match!', 'danger')
             return redirect(url_for('change_password'))
             
-        user_id = session.get('user_id')
+        user_id = session.get('UserID')
+        print('User id:',user_id)
         user = user_manager.get_user_by_id(user_id)
-        
-        if not user or user['Password'] != current_password:
+        if not user:
+            flash('User not found!', 'danger')
+            return redirect(url_for('change_password'))
+        if user['Password'] != current_password:
             flash('Current password is incorrect!', 'danger')
             return redirect(url_for('change_password'))
             
@@ -358,6 +370,7 @@ def instructor_dashboard():
                           courses=courses,
                           enrollment_stats=enrollment_stats)
 
+# The route below can be redundant 
 @app.route('/instructor/courses')
 @login_required
 @role_required(['instructor'])
@@ -415,37 +428,37 @@ def instructor_add_lecture(course_id):
     
     return render_template('instructor/add_lecture.html', course=course)
 
-@app.route('/instructor/lecture/edit/<int:lecture_id>', methods=['GET', 'POST'])
+@app.route('/instructor/lecture/view/<int:lecture_id>')
+@login_required
+@role_required(['instructor'])
+def instructor_view_lecture(lecture_id):
+    lecture = lecture_manager.get_lecture_by_id(lecture_id)
+    course = course_manager.get_course_by_id(lecture['CourseID'])
+    return render_template('instructor/view_lecture.html', lecture=lecture, course=course)
+
+@app.route('/instructor/lecture/<int:lecture_id>', methods=['GET', 'POST'])
 @login_required
 @role_required(['instructor'])
 def instructor_edit_lecture(lecture_id):
     instructor_id = session.get('entity_id')
     lecture = lecture_manager.get_lecture_by_id(lecture_id)
-    
     if not lecture:
         flash('Lecture does not exist.', 'danger')
         return redirect(url_for('instructor_courses'))
-    
     course_id = lecture['CourseID']
     course = course_manager.get_course_by_id(course_id)
-    
-    # Check if course belongs to instructor
     if not course or course.get('InstructorID') != instructor_id:
         flash('You do not have permission to edit this lecture.', 'warning')
         return redirect(url_for('instructor_courses'))
-    
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        
         success = lecture_manager.update_lecture_content(lecture_id, title=title, content=content)
-        
         if success:
             flash('Lecture updated successfully!', 'success')
             return redirect(url_for('instructor_course_detail', course_id=course_id))
         else:
             flash('Failed to update the lecture.', 'danger')
-    
     return render_template('instructor/edit_lecture.html', lecture=lecture, course=course)
 
 @app.route('/instructor/profile', methods=['GET', 'POST'])
@@ -535,6 +548,31 @@ def admin_instructors():
     instructors = instructor_manager.list_all_instructors()
     return render_template('admin/instructors.html', instructors=instructors)
 
+@app.route('/admin/instructor/<int:instructor_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_instructor_detail(instructor_id):
+    instructor = instructor_manager.get_instructor_by_id(instructor_id)
+    if not instructor:
+        flash('Instructor does not exist.', 'danger')
+        return redirect(url_for('admin_instructors'))
+
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        expertise = request.form['expertise']
+
+        success = instructor_manager.update_instructor_info(
+            instructor_id, name=name, email=email, expertise=expertise
+        )
+
+        if success:
+            flash('Instructor information updated successfully!', 'success')
+        else:
+            flash('Failed to update instructor information.', 'danger')
+        return redirect(url_for('admin_instructor_detail', instructor_id=instructor_id))
+
+    return render_template('admin/instructor_detail.html', instructor=instructor)
 @app.route('/admin/courses')
 @login_required
 @role_required(['admin'])
@@ -555,7 +593,7 @@ def admin_course_detail(course_id):
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        instructor_id = request.form.get('instructor_id', None)
+        instructor_id = request.form.get('instructor', '')
         
         if instructor_id == '':
             instructor_id = None
@@ -648,13 +686,12 @@ def admin_add_course():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        instructor_id = request.form.get('instructor_id', None)
-        
+        instructor_id = request.form.get('instructor', '')
+        print(f"Adding course: {name}, {description}, instructor_id={instructor_id}")
         if instructor_id == '':
             instructor_id = None
         else:
             instructor_id = int(instructor_id)
-            
         course_id = course_manager.add_course(name, description, instructor_id)
         
         if course_id:
@@ -666,6 +703,5 @@ def admin_add_course():
     instructors = instructor_manager.list_all_instructors()
     
     return render_template('admin/add_course.html', instructors=instructors)
-
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

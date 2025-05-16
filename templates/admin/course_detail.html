@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Course Detail | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Course Details</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">Course Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ course.CourseName }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required>{{ course.CourseDescription }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="instructor" class="form-label">Instructor</label>
+            <select class="form-select" id="instructor" name="instructor">
+                <option value="">Unassigned</option>
+                {% for instructor in instructors %}
+                    <option value="{{ instructor.InstructorID }}"
+                        {% if course.InstructorID == instructor.InstructorID %}selected{% endif %}>
+                        {{ instructor.InstructorName }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Course</button>
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">Back to Courses</a>
+        </div>
+    </form>
+    <hr>
+    <h4 class="mt-4">Enrolled Learners</h4>
+    {% if enrollments and enrollments|length > 0 %}
+    <ul class="list-group mb-4">
+        {% for enrollment in enrollments %}
+        <li class="list-group-item">
+            Learner ID: {{ enrollment.LearnerID }}
+            {% if enrollment.LearnerName %}
+                - {{ enrollment.LearnerName }}
+            {% endif %}
+            {% if enrollment.EnrollmentDate %}
+                <span class="text-muted">(Enrolled: {{ enrollment.EnrollmentDate }})</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No learners enrolled in this course.</p>
+    {% endif %}
+</div>
+{% endblock %}

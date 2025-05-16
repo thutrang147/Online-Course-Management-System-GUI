@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}My Courses | Course Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">My Enrolled Courses</h1>
+    {% if courses %}
+    <ul class="list-group mt-4">
+        {% for course in courses %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('learner_course_detail', course_id=course.CourseID) }}">
+                {{ course.CourseName }}
+            </a>
+            <span class="text-muted">{{ course.CourseDescription }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-4">You are not enrolled in any courses yet.</p>
+    {% endif %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+</div>
+{% endblock %}

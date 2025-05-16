@@ -16,6 +16,7 @@ def add_learner(name, email, phone, password):
         user_id = user_manager.create_user(email, password, 'learner')
         if not user_id:
             connection.rollback()
+            print("Failed to create user account.")
             return None
         
         # 2. Create learner profile

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Course Details | {{ course.CourseName if course else 'No course found' }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">{{ course.CourseName if course else 'No course found' }}</h1>
+    <p class="text-muted">{{ course.CourseDescription if course else '' }}</p>
+
+    <h3 class="mt-5">Lectures</h3>
+    {% if lectures and lectures|length > 0 %}
+    <ul class="list-group mb-4">
+        {% for lecture in lectures %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('learner_view_lecture', lecture_id=lecture['LectureID']) }}">
+                {{ lecture['Title'] }}
+            </a>
+            {% if lecture['Viewed'] %}
+                <span class="badge bg-success">Viewed</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No lectures available for this course yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('learner_courses') }}" class="btn btn-secondary">Back to My Courses</a>
+</div>
+{% endblock %}

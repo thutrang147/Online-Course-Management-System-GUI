@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Learners | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Learners</h2>
+    <a href="{{ url_for('admin_add_learner') }}" class="btn btn-primary mb-3">Add Learner</a>
+    {% if learners and learners|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Learner ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for learner in learners %}
+            <tr>
+                <td>{{ learner.LearnerID }}</td>
+                <td>{{ learner.LearnerName }}</td>
+                <td>{{ learner.Email }}</td>
+                <td>{{ learner.PhoneNumber }}</td>
+                <td>
+                    <a href="{{ url_for('admin_learner_detail', learner_id=learner.LearnerID) }}" class="btn btn-sm btn-info">Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No learners found.</p>
+    {% endif %}
+</div>
+{% endblock %}

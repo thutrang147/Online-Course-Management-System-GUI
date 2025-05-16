@@ -8,14 +8,18 @@
         <div class="col-md-8">
             <h1>Hello, {{ learner.LearnerName }}!</h1>
             <p class="text-muted">This is your learning space.</p>
+            <!-- Add this after the greeting in dashboard.html -->
+            <a href="{{ url_for('learner_profile') }}" class="btn btn-outline-primary mb-3">My Profile</a>
         </div>
     </div>
-
+    
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Your Courses</h5>
+                    <!-- Added button to view all courses -->
+                    <a href="{{ url_for('learner_courses') }}" class="btn btn-light btn-sm">View All Courses</a>
                 </div>
                 <div class="card-body">
                     {% if enrolled_courses %}

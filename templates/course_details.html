@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.CourseName }} | Course Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ course.CourseName }}</h1>
+    <p class="text-muted">{{ course.CourseDescription }}</p>
+
+    {% if instructor %}
+    <p><strong>Instructor:</strong> {{ instructor.InstructorName }}</p>
+    {% endif %}
+
+    <h3 class="mt-4">Lectures</h3>
+    {% if lectures and lectures|length > 0 %}
+    <ul class="list-group mb-4">
+        {% for lecture in lectures %}
+        <li class="list-group-item">
+            {{ lecture.Title }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No lectures available for this course yet.</p>
+    {% endif %}
+
+    {% if current_user.is_authenticated and current_user.role == 'learner' %}
+        <div class="d-flex gap-2 mt-3">
+            {% if is_enrolled %}
+                <span class="badge bg-success align-self-center">You are enrolled in this course</span>
+            {% else %}
+                <a href="{{ url_for('enroll_course', course_id=course.CourseID) }}" class="btn btn-primary">Enroll in this Course</a>
+            {% endif %}
+            <a href="{{ url_for('browse_courses') }}" class="btn btn-secondary">Back to Courses</a>
+        </div>
+    {% else %}
+        <a href="{{ url_for('browse_courses') }}" class="btn btn-secondary mt-3">Back to Courses</a>
+    {% endif %}
+</div>
+{% endblock %}

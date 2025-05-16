@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Learner Detail | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Learner Details</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ learner.LearnerName }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ learner.Email }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input type="text" class="form-control" id="phone" name="phone" value="{{ learner.PhoneNumber }}">
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Learner</button>
+            <a href="{{ url_for('admin_learners') }}" class="btn btn-secondary">Back to Learners</a>
+        </div>
+    </form>
+
+    <hr>
+    <h4 class="mt-4">Enrollments</h4>
+    {% if enrollments and enrollments|length > 0 %}
+    <ul class="list-group mb-4">
+        {% for enrollment in enrollments %}
+        <li class="list-group-item">
+            Course ID: {{ enrollment.CourseID }}
+            {% if enrollment.CourseName %}
+                - {{ enrollment.CourseName }}
+            {% endif %}
+            {% if enrollment.EnrollmentDate %}
+                <span class="text-muted">(Enrolled: {{ enrollment.EnrollmentDate }})</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>This learner is not enrolled in any courses.</p>
+    {% endif %}
+</div>
+{% endblock %}

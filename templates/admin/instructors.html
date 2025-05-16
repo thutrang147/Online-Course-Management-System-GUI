@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Instructors | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Instructors</h2>
+    <a href="{{ url_for('admin_add_instructor') }}" class="btn btn-primary mb-3">Add Instructor</a>
+    {% if instructors and instructors|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Instructor ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Expertise</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for instructor in instructors %}
+            <tr>
+                <td>{{ instructor.InstructorID }}</td>
+                <td>{{ instructor.InstructorName }}</td>
+                <td>{{ instructor.Email }}</td>
+                <td>{{ instructor.Expertise }}</td>
+                <td>
+                    <a href="{{ url_for('admin_instructor_detail', instructor_id=instructor.InstructorID) }}" class="btn btn-sm btn-info">Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No instructors found.</p>
+    {% endif %}
+</div>
+{% endblock %}

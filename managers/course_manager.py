@@ -8,7 +8,8 @@ def add_course(name, description, instructor_id):
         return None
     try:
         with connection.cursor() as cursor:
-            query = "INSERT INTO Courses (CourseName, Description, InstructorID) VALUES (%s, %s, %s)"
+            print(f"Adding course: {name}, {description}, instructor_id={instructor_id}")
+            query = "INSERT INTO Courses (CourseName, CourseDescription, InstructorID) VALUES (%s, %s, %s)"
             cursor.execute(query, (name, description, instructor_id))
             connection.commit()
             return cursor.lastrowid

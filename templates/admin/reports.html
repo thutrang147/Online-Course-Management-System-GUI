@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Reports | Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Instructor Workload Report</h2>
+    {% if instructor_workload and instructor_workload|length > 0 %}
+    <table class="table table-bordered table-hover mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Course Count</th>
+                <th>Learner Count</th>
+                <th>Lecture Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for instructor in instructor_workload %}
+            <tr>
+                <td>{{ instructor.InstructorName }}</td>
+                <td>{{ instructor.Email }}</td>
+                <td>{{ instructor.CourseCount }}</td>
+                <td>{{ instructor.LearnerCount }}</td>
+                <td>{{ instructor.LectureCount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No instructor workload data available.</p>
+    {% endif %}
+
+    <h2>Active Courses</h2>
+    {% if active_courses and active_courses|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Course Name</th>
+                <th>Description</th>
+                <th>Instructor</th>
+                <th>Enrolled Learners</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in active_courses %}
+            <tr>
+                <td>{{ course.CourseName }}</td>
+                <td>{{ course.CourseDescription }}</td>
+                <td>
+                    {% if course.InstructorName %}
+                        {{ course.InstructorName }}
+                    {% else %}
+                        <span class="text-muted">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td>{{ course.EnrollmentCount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No active courses data available.</p>
+    {% endif %}
+</div>
+{% endblock %}

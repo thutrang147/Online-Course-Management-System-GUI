@@ -37,7 +37,7 @@ def get_enrollments_by_learner(learner_id):
         with connection.cursor(dictionary=True) as cursor:
             query = """
             SELECT e.EnrollmentID, e.CourseID, e.LearnerID, e.EnrollmentDate,
-                   c.CourseName, c.Description,
+                   c.CourseName, c.CourseDescription,
                    i.InstructorName,
                    (SELECT COUNT(*) FROM Lectures WHERE CourseID = c.CourseID) as TotalLectures,
                    (SELECT COUNT(*) FROM LectureViews lv 
