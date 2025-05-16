@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Online Course Management System{% endblock %}
+
+{% block content %}
+    <div class="jumbotron bg-light p-5 rounded mb-4">
+        <h1 class="display-4">Welcome to the Online Learning System</h1>
+        <p class="lead">An online learning platform that helps you enhance your skills flexibly and effectively.</p>
+        <hr class="my-4">
+        <p>Explore hundreds of quality courses from top instructors.</p>
+        <a class="btn btn-primary btn-lg" href="{{ url_for('browse_courses') }}">Explore Courses</a>
+        {% if not session.get('role') %}
+            <a class="btn btn-outline-primary btn-lg ms-2" href="{{ url_for('register') }}">Register Now</a>
+        {% endif %}
+    </div>
+
+    <h2 class="mb-4">Featured Courses</h2>
+    <div class="row">
+        {% if courses %}
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card course-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.CourseName }}</h5>
+                            <p class="card-text">{{ course.Description[:100] ~ '...' if course.Description and course.Description|length > 100 else course.Description }}</p>
+                            <p class="card-text"><small class="text-muted">Instructor: {{ course.InstructorName or 'Not assigned yet' }}</small></p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-primary">Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <div class="alert alert-info">
+                    No courses available at the moment.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('browse_courses') }}" class="btn btn-outline-primary">View All Courses</a>
+    </div>
+
+{% endblock %}

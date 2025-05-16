@@ -1,692 +1,671 @@
-# main.py
-# Main application file for the Online Course Management CLI (Role-Based Menu)
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
+import os
+from functools import wraps
 
-import utils.ui_utils as ui
-# Import backend manager modules
-from managers import course_manager
-from managers import enrollment_manager
-from managers import instructor_manager
-from managers import learner_manager
-from managers import lecture_manager
-0
-# --- Administrator Panel Handlers ---
+# Import managers
+from managers import auth_manager, user_manager, learner_manager, instructor_manager
+from managers import course_manager, lecture_manager, enrollment_manager
 
-def admin_handle_learner_management():
-    """Handles all actions related to Learner management by an Admin."""
-    learner_menu_options = ["List All Learners", "Add New Learner", "View Learner Details",
-                            "Update Learner Info", "Delete Learner", "Back to Admin Panel"]
-    while True:
-        ui.display_menu("Admin: Learner Management", learner_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(learner_menu_options))])
+app = Flask(__name__)
+app.secret_key = os.urandom(24)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-        try:
-            if choice == 0: # List All
-                learners = learner_manager.list_all_learners()
-                ui.display_table(["LearnerID", "LearnerName", "Email", "PhoneNumber"], 
-                                 learners, 
-                                 "No learners found.")
-            elif choice == 1: # Add New
-                name = ui.get_input("Enter learner name", str)
-                email = ui.get_input("Enter learner email", str)
-                phone = ui.get_input("Enter learner phone (optional)", str, required=False)
-                learner_id = learner_manager.add_learner(name, email, phone if phone else None)
-                if learner_id is not None: # Check if ID is returned (not False/None on error)
-                    ui.display_message(f"Learner '{name}' added successfully with ID: {learner_id}", "success")
-                else:
-                    ui.display_message("Failed to add learner (email might already exist or DB error).", "error")
-            elif choice == 2: # View Details
-                 learner_id = ui.get_input("Enter Learner ID to view", int)
-                 learner = learner_manager.get_learner_by_id(learner_id)
-                 if learner:
-                     ui.display_table(["LearnerID", "LearnerName", "Email", "PhoneNumber"], 
-                                      [{'LearnerID': learner_id, 'LearnerName': learner['LearnerName'], 'Email': learner['Email'], 'PhoneNumber': learner.get('PhoneNumber', 'N/A')}])
-                 else: # get
-                     ui.display_message(f"Learner with ID {learner_id} not found.", "error")
-            elif choice == 3: # Update
-                learner_id = ui.get_input("Enter Learner ID to update", int)
-                learner = learner_manager.get_learner_by_id(learner_id)
-                if not learner:
-                     ui.display_message(f"Learner with ID {learner_id} not found.", "error")
-                     continue
-                name = ui.get_input(f"Enter new name (current: {learner['LearnerName']}, blank to keep)", str, required=False)
-                email = ui.get_input(f"Enter new email (current: {learner['Email']}, blank to keep)", str, required=False)
-                phone = ui.get_input(f"Enter new phone (current: {learner.get('PhoneNumber', 'N/A')}, blank to keep)", str, required=False)
-                if learner_manager.update_learner_info(learner_id, name=name or None, email=email or None, phone=phone or None):
-                    ui.display_message(f"Learner ID {learner_id} updated successfully.", "success")
-                else:
-                    ui.display_message("Failed to update learner.", "error")
-            elif choice == 4: # Delete
-                learner_id = ui.get_input("Enter Learner ID to delete", int)
-                if learner_manager.get_learner_by_id(learner_id): # Check if exists before confirming
-                    if ui.confirm_action(f"Delete Learner ID {learner_id}? This cascades to enrollments & lecture views."):
-                        if learner_manager.delete_learner(learner_id):
-                            ui.display_message(f"Learner ID {learner_id} deleted successfully.", "success")
-                        else:
-                            ui.display_message("Failed to delete learner.", "error")
-                else:
-                    ui.display_message(f"Learner with ID {learner_id} not found.", "error")
-            elif choice == 5: # Back
-                break
-            if choice != 5 : ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"An unexpected error occurred in Learner Management: {e}", "error")
-            ui.pause_screen()
+class User(UserMixin):
+    def __init__(self, user_dict):
+        self.id = user_dict.get('UserID') or user_dict.get('user_id') or user_dict.get('id')
+        self.email = user_dict.get('Email') or user_dict.get('email')
+        self.role = user_dict.get('Role') or user_dict.get('role')
+        self.password = user_dict.get('Password') or user_dict.get('password')
 
+@login_manager.user_loader
+def load_user(user_id):
+    user_dict = user_manager.get_user_by_id(int(user_id))
+    if not user_dict:
+        return None
+    return User(user_dict)
 
-def admin_handle_instructor_management():
-    """Handles all actions related to Instructor management by an Admin."""
-    instructor_menu_options = ["List All Instructors", "Add New Instructor", "View Instructor Details",
-                               "Update Instructor Info", "Delete Instructor", "Back to Admin Panel"]
-    while True:
-        ui.display_menu("Admin: Instructor Management", instructor_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(instructor_menu_options))])
-        try:
-            if choice == 0: # List All
-                instructors = instructor_manager.list_all_instructors()
-                ui.display_table(["InstructorID", "InstructorName", "Expertise", "Email"], 
-                                 instructors, 
-                                 "No instructors found.")
-            elif choice == 1: # Add New
-                name = ui.get_input("Enter instructor name", str)
-                expertise = ui.get_input("Enter instructor expertise (optional)", str, required=False)
-                email = ui.get_input("Enter instructor email", str)
-                instructor_id = instructor_manager.add_instructor(name, expertise if expertise else None, email)
-                if instructor_id is not None:
-                    ui.display_message(f"Instructor '{name}' added successfully with ID: {instructor_id}", "success")
-                else:
-                    ui.display_message("Failed to add instructor (email might already exist or DB error).", "error")
-            elif choice == 2: # View Details
-                instructor_id = ui.get_input("Enter Instructor ID to view", int)
-                instructor = instructor_manager.get_instructor_by_id(instructor_id)
-                if instructor:
-                    ui.display_table(["InstructorID", "InstructorName", "Expertise", "Email"], 
-                                     [instructor])
-                else:
-                    ui.display_message(f"Instructor with ID {instructor_id} not found.", "error")
-            elif choice == 3: # Update
-                instructor_id = ui.get_input("Enter Instructor ID to update", int)
-                instructor = instructor_manager.get_instructor_by_id(instructor_id)
-                if not instructor:
-                     ui.display_message(f"Instructor with ID {instructor_id} not found.", "error")
-                     continue
-                name = ui.get_input(f"Enter new name (current: {instructor['InstructorName']}, blank to keep)", str, required=False)
-                expertise = ui.get_input(f"Enter new expertise (current: {instructor.get('Expertise', 'N/A')}, blank to keep)", str, required=False)
-                email_val = ui.get_input(f"Enter new email (current: {instructor['Email']}, blank to keep)", str, required=False) # Use different var name
-                if instructor_manager.update_instructor_info(instructor_id, name=name or None, expertise=expertise or None, email=email_val or None): # Corrected
-                    ui.display_message(f"Instructor ID {instructor_id} updated successfully.", "success")
-                else:
-                    ui.display_message("Failed to update instructor.", "error")
-            elif choice == 4: # Delete
-                instructor_id = ui.get_input("Enter Instructor ID to delete", int)
-                if instructor_manager.get_instructor_by_id(instructor_id):
-                    if ui.confirm_action(f"Delete Instructor ID {instructor_id}? Courses assigned will have InstructorID set to NULL."):
-                        if instructor_manager.delete_instructor(instructor_id):
-                            ui.display_message(f"Instructor ID {instructor_id} deleted successfully.", "success")
-                        else:
-                            ui.display_message("Failed to delete instructor.", "error")
-                else:
-                    ui.display_message(f"Instructor with ID {instructor_id} not found.", "error")
-            elif choice == 5: # Back
-                break
-            if choice != 5: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"An unexpected error occurred in Instructor Management: {e}", "error")
-            ui.pause_screen()
+# Role-based access control
+def role_required(roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.role not in roles:
+                flash('You do not have permission to access this page.', 'danger')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
+# === ROUTE DEFINITIONS ===
 
-def admin_handle_course_management():
-    """Handles all actions related to Course management by an Admin."""
-    course_menu_options = [
-        "List All Courses (with Details)", "Add New Course", "View Course Details & Lectures",
-        "Update Course Info", "Delete Course", "Manage Lectures for a Course", "Back to Admin Panel"
-    ]
-    while True:
-        ui.display_menu("Admin: Course Management", course_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(course_menu_options))])
-        try:
-            if choice == 0: # List All Courses
-                courses = course_manager.list_courses_with_details() 
-                if courses: # Expects list of dicts: {'CourseID', 'CourseName', 'Description', 'InstructorName', 'LectureCount', 'EnrollmentCount'}
-                    ui.display_table(["CourseID", "CourseName", "CourseDescription", "InstructorName", "LectureCount", "EnrollmentCount"], 
-                                     courses, 
-                                     "No courses found.")
-                else:
-                    ui.display_message("No courses found.", "info")
-            elif choice == 1: # Add New Course
-                name = ui.get_input("Enter course name", str)
-                description = ui.get_input("Enter course description (optional)", str, required=False)
-                instructors = instructor_manager.list_all_instructors()
-                instructor_id_to_assign = None
-                if instructors:
-                    ui.display_message("Available Instructors:")
-                    ui.display_table(["InstructorID", "InstructorName"], instructors)
-                    instructor_id_str = ui.get_input("Enter Instructor ID to assign (optional, blank for none)", str, required=False,
-                                                  allowed_values=[str(i['InstructorID']) for i in instructors] + [''])
-                    if instructor_id_str: instructor_id_to_assign = int(instructor_id_str)
-                else:
-                    ui.display_message("No instructors available to assign.", "info")
+# Home Page
+@app.route('/')
+def index():
+    # Get featured courses for display
+    featured_courses = course_manager.get_featured_courses()
+    return render_template('index.html', courses=featured_courses)
 
-                course_id = course_manager.add_course(name, description if description else None, instructor_id_to_assign)
-                if course_id is not None:
-                    ui.display_message(f"Course '{name}' added successfully with ID: {course_id}","success")
-                else:
-                    ui.display_message(f"Failed to add course '{name}'.","error")
-            elif choice == 2: # View Course Details & Lectures
-                course_id = ui.get_input("Enter Course ID to view", int)
-                course = course_manager.get_course_by_id(course_id)
-                if not course:
-                     ui.display_message(f"Course with ID {course_id} not found.", "error")
-                     continue
-                
-                instructor_name = "N/A"
-                if course.get('InstructorID'):
-                    instr = instructor_manager.get_instructor_by_id(course['InstructorID'])
-                    if instr: instructor_name = instr['InstructorName']
-                
-                ui.display_message(f"\nDetails for Course: {course['CourseName']} (ID: {course['CourseID']})")
-                print(f"  Description: {course.get('CourseDescription', 'N/A')}")
-                print(f"  Instructor: {instructor_name}")
-                lectures = lecture_manager.get_lectures_by_course(course_id)
-                ui.display_message("Lectures in this course:")
-                ui.display_table(["LectureID", "Title"], 
-                                 lectures, # vua xoa if else  
-                                 "NO lectures found.")
-            elif choice == 3: # Update Course Info
-                course_id = ui.get_input("Enter Course ID to update", int)
-                course = course_manager.get_course_by_id(course_id)
-                if not course:
-                     ui.display_message(f"Course with ID {course_id} not found.", "error")
-                     continue
-                name_val = ui.get_input(f"New name (current: {course['CourseName']}, blank to keep)", str, required=False)
-                desc_val = ui.get_input(f"New desc (current: {course.get('CourseDescription','N/A')}, blank to keep)", str, required=False)
-                current_instructor_id = course.get('InstructorID')
-                
-                change_instructor = ui.get_input("Change instructor? (y/n)", str, allowed_values=['y', 'n'], required=False)
-                new_instructor_id = current_instructor_id # Keep current unless changed
-                if change_instructor == 'y':
-                     instructors = instructor_manager.list_all_instructors()
-                     if instructors:
-                         ui.display_table(["InstructorID", "InstructorName"], instructors)
-                         new_instructor_id_str = ui.get_input("New Instructor ID (blank for none, '0' to remove)", str, required=False,
-                                                          allowed_values=[str(i['InstructorID']) for i in instructors] + ['', '0'])
-                         if new_instructor_id_str == '0':
-                             new_instructor_id = None
-                         elif new_instructor_id_str:
-                             new_instructor_id = int(new_instructor_id_str)
-                         # If blank, new_instructor_id remains current_instructor_id
-                     else: ui.display_message("No instructors available.", "info")
+# Authentication Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        
+        user_dict = auth_manager.authenticate(email, password)
+        
+        if not user_dict:
+            flash('Incorrect email or password!', 'danger')
+            return render_template('login.html')
+        
+        user = User(user_dict)
+        login_user(user)
+        
+        # Lưu role vào session
+        role = user_dict.get('Role', user_dict.get('role'))
+        session['role'] = role
+        
+        # Lấy entity_id dựa trên role
+        if role == 'learner':
+            learner = learner_manager.get_learner_by_email(email)
+            if learner:
+                session['entity_id'] = learner['LearnerID']
+                print(f"Debug - Learner ID set to: {learner['LearnerID']}")
+        elif role == 'instructor':
+            instructor = instructor_manager.get_instructor_by_email(email)
+            if instructor:
+                session['entity_id'] = instructor['InstructorID']
+        
+        flash(f'Login successful!', 'success')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('login.html')
 
-                if course_manager.update_course_info(course_id, name=name_val or None, description=desc_val or None, instructor_id=new_instructor_id):
-                     ui.display_message(f"Course ID {course_id} updated successfully.", "success")
-                else:
-                     ui.display_message("Failed to update course.", "error")
-            elif choice == 4: # Delete Course
-                course_id = ui.get_input("Enter Course ID to delete", int)
-                if course_manager.get_course_by_id(course_id):
-                    if ui.confirm_action(f"Delete Course ID {course_id}? This cascades to lectures, enrollments, lecture views."):
-                        if course_manager.delete_course(course_id):
-                            ui.display_message(f"Course ID {course_id} deleted successfully.", "success")
-                        else:
-                            ui.display_message("Failed to delete course.", "error")
-                else:
-                    ui.display_message(f"Course with ID {course_id} not found.", "error")
-            elif choice == 5: # Manage Lectures for a Course
-                all_courses = course_manager.list_all_courses()
-                if not all_courses:
-                    ui.display_message("No courses available to manage lectures for.", "info")
-                    continue
-                ui.display_table(["CourseID", "CourseName"], all_courses)
-                course_id_to_manage = ui.get_input("Enter Course ID to manage its lectures", int,
-                                                allowed_values=[str(c['CourseID']) for c in all_courses])
-                if course_manager.get_course_by_id(course_id_to_manage):
-                    admin_handle_lecture_management(course_id_to_manage)
-                else:
-                     ui.display_message(f"Course with ID {course_id_to_manage} not found.", "error")
-            elif choice == 6: # Back
-                break
-            if choice != 6: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"An unexpected error in Course Management: {e}", "error")
-            ui.pause_screen()
-
-# CHECKED
-def admin_handle_lecture_management(course_id: int):
-    """Handles lecture management for a specific course by an Admin."""
-    lecture_menu_options = [
-        "List Lectures for this Course", "Add New Lecture", "Update Lecture Content", "Delete Lecture", "Back"
-    ]
-    course_details = course_manager.get_course_by_id(course_id)
-    if not course_details:
-        ui.display_message(f"Course ID {course_id} not found for lecture management.", "error")
-        return
-    course_name = course_details["CourseName"]
-
-    while True:
-        ui.display_menu(f"Admin: Lecture Management for '{course_name}' (ID: {course_id})", lecture_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(lecture_menu_options))])
-        try:
-            if choice == 0: # List Lectures
-                lectures = lecture_manager.get_lectures_by_course(course_id)
-                ui.display_table(["LectureID", "Title", "Content"],
-                                 lectures if lectures else [],
-                                 "NO lectures found for this course.")
-            elif choice == 1: # Add New Lecture
-                title = ui.get_input("Enter lecture title", str)
-                content = ui.get_input("Enter lecture content (optional)", str, required=False)
-                lecture_id = lecture_manager.add_lecture(course_id, title, content if content else None)
-                if lecture_id is not None:
-                    ui.display_message(f"Lecture '{title}' added successfully with ID: {lecture_id}", "success")
-                else:
-                    ui.display_message("Failed to add lecture.", "error")
-            elif choice == 2: # Update Lecture Content
-                lecture_id_to_update = ui.get_input("Enter Lecture ID to update", int)
-                lecture = lecture_manager.get_lecture_by_id(lecture_id_to_update)
-                if not lecture or lecture['CourseID'] != course_id:
-                     ui.display_message(f"Lecture ID {lecture_id_to_update} not found in this course.", "error")
-                     continue
-                title_val = ui.get_input(f"New title (current: {lecture['Title']}, blank to keep)", str, required=False)
-                content_val = ui.get_input(f"New content (blank to keep)", str, required=False)
-                if lecture_manager.update_lecture_content(lecture_id_to_update, title=title_val or None, content=content_val or None):
-                     ui.display_message(f"Lecture ID {lecture_id_to_update} updated successfully.", "success")
-                else:
-                     ui.display_message("Failed to update lecture.", "error")
-            elif choice == 3: # Delete Lecture
-                 lecture_id_to_delete = ui.get_input("Enter Lecture ID to delete", int)
-                 lecture = lecture_manager.get_lecture_by_id(lecture_id_to_delete)
-                 if not lecture or lecture['CourseID'] != course_id:
-                     ui.display_message(f"Lecture ID {lecture_id_to_delete} not found in this course.", "error")
-                     continue
-                 if ui.confirm_action(f"Delete Lecture ID {lecture_id_to_delete} ('{lecture['Title']}')? This cascades to lecture views."):
-                     if lecture_manager.delete_lecture(lecture_id_to_delete):
-                         ui.display_message(f"Lecture ID {lecture_id_to_delete} deleted successfully.", "success")
-                     else:
-                         ui.display_message("Failed to delete lecture.", "error")
-            elif choice == 4: # Back
-                break
-            if choice != 4: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"An unexpected error in Lecture Management: {e}", "error")
-            ui.pause_screen()
-
-def admin_handle_enrollment_management():
-    """Admin functions for managing enrollments."""
-    enrollment_menu_options = [
-        "View Enrollments (Filterable)",
-        "Manually Enroll a Learner",
-        "View Enrollment Logs",
-        "Back to Admin Panel"
-    ]
-    while True:
-        ui.display_menu("Admin: Enrollment Management", enrollment_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(enrollment_menu_options))])
-        try:
-            if choice == 0: # View Enrollments
-                filter_by = ui.get_input("Filter by? (all, learner, course)", str, allowed_values=['all', 'learner', 'course'])
-                headers = ["EnrollmentID", "LearnerName", "CourseName", "EnrollmentDate", "CompletionStatus", "ProgressPercentage"]
-                display_data = []
-
-                if filter_by == 'all':
-                    enrollments_data = enrollment_manager.get_all_enrollments_detailed() 
-                    if enrollments_data:
-                        # Data is already a list of dictionaries with the correct keys
-                        display_data = enrollments_data
-
-                elif filter_by == 'learner':
-                    learners = learner_manager.list_all_learners()
-                    if not learners: ui.display_message("No learners to filter by.", "info"); continue
-                    ui.display_table(["LearnerID", "LearnerName"], [{k : l[k] for k in ['LearnerID', 'LearnerName']} for l in learners])
-                    learner_id_filter = ui.get_input("Enter Learner ID", int, allowed_values=[str(l['LearnerID']) for l in learners])
-                    
-                    # get_enrollments_by_learner returns: E.* (all from Enrollments), C.CourseName
-                    enrollments_data = enrollment_manager.get_enrollments_by_learner(learner_id_filter)
-                    if enrollments_data:
-                        learner_info = learner_manager.get_learner_by_id(learner_id_filter)
-                        selected_learner_name = learner_info['LearnerName'] if learner_info else "Unknown Learner"
-                        
-                        for e_data in enrollments_data:
-                            # Construct a new dictionary with all required header keys
-                            display_data.append({
-                                "EnrollmentID": e_data['EnrollmentID'],
-                                "LearnerName": selected_learner_name, # Add LearnerName
-                                "CourseName": e_data['CourseName'],   # Already present
-                                "EnrollmentDate": e_data['EnrollmentDate'],
-                                "CompletionStatus": e_data['CompletionStatus'],
-                                "ProgressPercentage": e_data['ProgressPercentage']
-                            })
-                elif filter_by == 'course':
-                    courses = course_manager.list_all_courses()
-                    if not courses: ui.display_message("No courses to filter by.", "info"); continue
-                    ui.display_table(["CourseID", "CourseName"], [{k : c[k] for k in ['CourseID', 'CourseName']} for c in courses])
-                    course_id_filter = ui.get_input("Enter Course ID", int, allowed_values=[str(c['CourseID']) for c in courses])
-                    enrollments_data = enrollment_manager.get_enrollments_by_course(course_id_filter) # Returns E.*, L.LearnerName
-                    if enrollments_data:
-                        course_info = course_manager.get_course_by_id(course_id_filter)
-                        selected_course_name = course_info['CourseName'] if course_info else "Unknown Course"
-
-                        for e_data in enrollments_data:
-                            # Construct a new dictionary with all required header keys
-                            display_data.append({
-                                "EnrollmentID": e_data['EnrollmentID'],
-                                "LearnerName": e_data['LearnerName'],     # Already present
-                                "CourseName": selected_course_name,     # Add CourseName
-                                "EnrollmentDate": e_data['EnrollmentDate'],
-                                "CompletionStatus": e_data['CompletionStatus'],
-                                "ProgressPercentage": e_data['ProgressPercentage']
-                            })
-                
-                if display_data:
-                    # Pass the list of dictionaries directly to ui.display_table
-                    ui.display_table(headers, display_data, "No enrollments found for the given filter.")
-                else:
-                    ui.display_message("No enrollments found for the given filter.", "info")
-
-            elif choice == 1: # Manually Enroll
-                learners = learner_manager.list_all_learners()
-                if not learners: ui.display_message("No learners available.", "error"); continue
-                ui.display_table(["LearnerID", "LearnerName"], [{k : l[k] for k in ['LearnerID', 'LearnerName']} for l in learners])
-                learner_id_enroll = ui.get_input("Enter Learner ID", int, allowed_values=[str(l['LearnerID']) for l in learners])
-
-                courses = course_manager.list_all_courses()
-                if not courses: ui.display_message("No courses available.", "error"); continue
-                ui.display_table(["CourseID", "CourseName"], [{k : c[k] for k in ['CourseID', 'CourseName']} for c in courses])
-                course_id_enroll = ui.get_input("Enter Course ID", int, allowed_values=[str(c['CourseID']) for c in courses])
-                
-                if enrollment_manager.enroll_learner(learner_id_enroll, course_id_enroll): # Uses SP
-                    ui.display_message(f"Learner ID {learner_id_enroll} enrolled in Course ID {course_id_enroll}.", "success")
-                else:
-                    ui.display_message("Failed to enroll (perhaps already enrolled, or SP error).", "error")
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        phone = request.form.get('phone', '')
+        
+        # Check if passwords match
+        if password != confirm_password:
+            flash('Passwords do not match!', 'danger')
+            return render_template('register.html')
             
-            elif choice == 2: # View Enrollment Logs
-                logs = enrollment_manager.get_enrollment_logs() # Expects: LogID, EnrollmentID, LearnerName, CourseName, LogTime, ActionType
-                if logs:
-                    ui.display_table(["LogID", "EnrollmentID", "LearnerName", "CourseName", "LogTime", "ActionType"], 
-                                     [{k : l[k] for k in ['LogID', 'EnrollmentID', 'LearnerName', 'CourseName', 'LogTime', 'ActionType']} for l in logs], 
-                                     "NO enrollment logs found.")
-                else:
-                    ui.display_message("No enrollment logs found.", "info")
+        # Check if email already exists
+        if not user_manager.is_email_unique(email):
+            flash('This email is already registered.', 'danger')
+            return render_template('register.html')
+        
+        # Create new learner (only learners can self-register)
+        learner_id = learner_manager.add_learner(name, email, phone, password)
+        
+        if learner_id:
+            flash('Registration successful! You can log in now.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Registration failed. Please try again later.', 'danger')
+            
+    return render_template('register.html')
 
-            elif choice == 3: # Back
-                break
-            if choice != 3: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"Error in Enrollment Management: {e}", "error")
-            ui.pause_screen()
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    session.clear()
+    flash('You have successfully logged out.', 'info')
+    return redirect(url_for('index'))
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        # Implementation for password reset (would involve sending email)
+        flash('If the account exists, we have sent password reset instructions to your email.', 'info')
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html')
 
-def admin_handle_reports():
-    """Handles displaying reports and statistics for an Admin."""
-    report_menu_options = [
-        "Total Number of Learners",
-        "Instructor Teaching Load (All Instructors)",
-        "Course Completion Summary (Per Course)",
-        "List Active Courses (with Enrollment Count)",
-        "Back to Admin Panel"
-    ]
-    while True:
-        ui.display_menu("Admin: Reporting and Statistics", report_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(report_menu_options))])
-        try:
-            if choice == 0: # Total Learners
-                count = len(learner_manager.list_all_learners())
-                ui.display_message(f"Total number of learners: {count}")
-            elif choice == 1: # Instructor Workload
-                workload = instructor_manager.get_all_instructors_workload() # Queries View
-                if workload:
-                    ui.display_table(["InstructorName", "NumberOfCourses"], 
-                                     [{k: w[k] for k in ['InstructorName', 'NumberOfCourses']} for w in workload], 
-                                     "NO workload data.")
-                else:
-                    ui.display_message("No instructor workload data found.", "info")
-            elif choice == 2: # Course Completion Summary
-                courses = course_manager.list_all_courses()
-                if not courses: ui.display_message("No courses available.", "error"); continue
-                ui.display_table(["CourseID", "CourseName"], [{k: c[k] for k in ['CourseID', 'CourseName']} for c in courses])
-                course_id_summary = ui.get_input("Enter Course ID for summary", int, allowed_values=[str(c['CourseID']) for c in courses])
-                summary = enrollment_manager.get_course_progress_summary(course_id_summary) # Calls SP
-                if summary:
-                    ui.display_table(["LearnerName", "CourseName", "EnrollmentDate", "CompletionStatus", "ProgressPercentage"], 
-                                     [{k: s[k] for k in ['LearnerName', 'CourseName', 'EnrollmentDate', 'CompletionStatus', 'ProgressPercentage']} for s in summary], 
-                                     "NO summary data.")
-                else:
-                    ui.display_message("No completion summary found for this course.", "info")
-            elif choice == 3: # List Active Courses
-                active_courses_list = course_manager.list_active_courses()
-                if active_courses_list:
-                    ui.display_table(["CourseID", "CourseName", "EnrollmentCount"],
-                                     [{k: ac[k] for k in ['CourseID', 'CourseName', 'EnrollmentCount']} for ac in active_courses_list],
-                                     "No active courses found.")
-                else:
-                    ui.display_message("No active courses found (courses with >=1 enrollment).", "info")
-            elif choice == 4: # Back
-                break
-            if choice != 4: ui.pause_screen()
-        except Exception as e:
-             ui.display_message(f"An error occurred while generating the report: {e}", "error")
-             ui.pause_screen()
+# User Dashboard - redirects to appropriate role dashboard
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    role = session.get('role')
+    if role == 'learner':
+        return redirect(url_for('learner_dashboard'))
+    elif role == 'instructor':
+        return redirect(url_for('instructor_dashboard'))
+    elif role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    else:
+        flash('Unknown role.', 'danger')
+        return redirect(url_for('logout'))
 
-# --- Learner Portal Handlers ---
-def handle_learner_portal():
-    ui.display_message("--- Learner Portal ---")
+# === LEARNER ROUTES ===
+@app.route('/learner')
+@login_required
+@role_required(['learner'])
+def learner_dashboard():
+    learner_id = session.get('entity_id')
+    print(f"Debug - Learner dashboard - learner_id from session: {learner_id}")
+    
+    learner = learner_manager.get_learner_by_id(learner_id)
+    print(f"Debug - Learner data: {learner}")
+    
+    # Get enrolled courses with progress
+    enrolled_courses = enrollment_manager.get_enrollments_by_learner(learner_id)
+    print(f"Debug - Enrolled courses count: {len(enrolled_courses) if enrolled_courses else 0}")
+    print(f"Debug - Enrolled courses data: {enrolled_courses}")
+    
+    # Get recommended courses
+    recommended_courses = course_manager.get_recommended_courses(learner_id)
+    
+    return render_template('learner/dashboard.html', 
+                           learner=learner,
+                           enrolled_courses=enrolled_courses,
+                           recommended_courses=recommended_courses)
+
+@app.route('/learner/courses')
+@login_required
+@role_required(['learner'])
+def learner_courses():
+    learner_id = session.get('entity_id')
+    enrolled_courses = enrollment_manager.get_enrollments_by_learner(learner_id)
+    return render_template('learner/courses.html', courses=enrolled_courses)
+
+@app.route('/learner/course/<int:course_id>')
+@login_required
+@role_required(['learner'])
+def learner_course_detail(course_id):
+    learner_id = session.get('entity_id')
+    
+    # Check if learner is enrolled
+    enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+    if not enrollment:
+        flash('Bạn chưa đăng ký khóa học này.', 'warning')
+        return redirect(url_for('learner_courses'))
+    
+    # Get course details
+    course = course_manager.get_course_by_id(course_id)
+    
+    # Get lectures with view status
+    lectures = lecture_manager.get_lectures_with_view_status(learner_id, course_id)
+    
+    return render_template('learner/course_detail.html', 
+                           course=course,
+                           lectures=lectures,
+                           enrollment=enrollment)
+
+@app.route('/learner/lecture/<int:lecture_id>')
+@login_required
+@role_required(['learner'])
+def learner_view_lecture(lecture_id):
+    learner_id = session.get('entity_id')
+    lecture = lecture_manager.get_lecture_by_id(lecture_id)
+    
+    if not lecture:
+        flash('Lecture does not exist.', 'danger')
+        return redirect(url_for('learner_courses'))
+    
+    # Check if enrolled in the course
+    course_id = lecture['CourseID']
+    enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+    if not enrollment:
+        flash('You do not have permission to view this lecture.', 'warning')
+        return redirect(url_for('learner_courses'))
+    
+    # Mark lecture as viewed
+    enrollment_manager.mark_lecture_viewed(learner_id, lecture_id)
+    
+    return render_template('learner/view_lecture.html', lecture=lecture)
+
+@app.route('/learner/profile', methods=['GET', 'POST'])
+@login_required
+@role_required(['learner'])
+def learner_profile():
+    learner_id = session.get('entity_id')
+    learner = learner_manager.get_learner_by_id(learner_id)
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        phone = request.form['phone']
+        
+        success = learner_manager.update_learner_info(
+            learner_id, name=name, phone=phone)
+        
+        if success:
+            flash('Your personal information has been updated.', 'success')
+        else:
+            flash('Failed to update information.', 'danger')
+            
+        return redirect(url_for('learner_profile'))
+        
+    return render_template('learner/profile.html', learner=learner)
+
+@app.route('/learner/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match!', 'danger')
+            return redirect(url_for('change_password'))
+            
+        user_id = session.get('user_id')
+        user = user_manager.get_user_by_id(user_id)
+        
+        if not user or user['Password'] != current_password:
+            flash('Current password is incorrect!', 'danger')
+            return redirect(url_for('change_password'))
+            
+        success = user_manager.update_password(user_id, new_password)
+        
+        if success:
+            flash('Password has been changed successfully.', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Password change failed.', 'danger')
+            
+    return render_template('change_password.html')
+
+@app.route('/courses')
+def browse_courses():
+    courses = course_manager.list_courses_with_details()
+    print(f"Debug - Courses count: {len(courses) if courses else 0}")
+    print(f"Debug - First course: {courses[0] if courses else 'No courses'}")
+    return render_template('courses.html', courses=courses)
+
+@app.route('/course/<int:course_id>')
+def course_details(course_id):
+    course = course_manager.get_course_by_id(course_id)
+    if not course:
+        flash('The course does not exist.', 'danger')
+        return redirect(url_for('browse_courses'))
+        
+    # Get instructor
+    instructor = None
+    if course.get('InstructorID'):
+        instructor = instructor_manager.get_instructor_by_id(course['InstructorID'])
+        
+    # Get lectures (only titles)
+    lectures = lecture_manager.get_lectures_by_course(course_id)
+    
+    # Check if user is enrolled
+    is_enrolled = False
+    if current_user.is_authenticated:
+        if current_user.role == 'learner':  
+            learner_id = session.get('entity_id')
+            enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+            is_enrolled = enrollment is not None
+    
+    return render_template('course_details.html', 
+                          course=course, 
+                          instructor=instructor, 
+                          lectures=lectures,
+                          is_enrolled=is_enrolled)
+
+@app.route('/enroll/<int:course_id>')
+@login_required
+@role_required(['learner'])
+def enroll_course(course_id):
+    learner_id = session.get('entity_id')
+    
+    # Check if already enrolled
+    enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+    if enrollment:
+        flash('You have already enrolled in this course.', 'info')
+        return redirect(url_for('course_details', course_id=course_id))
+    
+    # Enroll
+    success = enrollment_manager.enroll_learner(learner_id, course_id)
+    
+    if success:
+        flash('Course enrollment successful!', 'success')
+    else:
+        flash('Course enrollment failed.', 'danger')
+        
+    return redirect(url_for('course_details', course_id=course_id))
+
+# === INSTRUCTOR ROUTES ===
+@app.route('/instructor')
+@login_required
+@role_required(['instructor'])
+def instructor_dashboard():
+    instructor_id = session.get('entity_id')
+    instructor = instructor_manager.get_instructor_by_id(instructor_id)
+    
+    # Get assigned courses
+    courses = course_manager.get_courses_by_instructor(instructor_id)
+    
+    # Get enrollment statistics
+    enrollment_stats = {}
+    for course in courses:
+        course_id = course['CourseID']
+        enrollments = enrollment_manager.get_enrollments_by_course(course_id)
+        enrollment_stats[course_id] = len(enrollments) if enrollments else 0
+    
+    return render_template('instructor/dashboard.html', 
+                          instructor=instructor,
+                          courses=courses,
+                          enrollment_stats=enrollment_stats)
+
+@app.route('/instructor/courses')
+@login_required
+@role_required(['instructor'])
+def instructor_courses():
+    instructor_id = session.get('entity_id')
+    courses = course_manager.get_courses_by_instructor(instructor_id)
+    return render_template('instructor/courses.html', courses=courses)
+
+@app.route('/instructor/course/<int:course_id>')
+@login_required
+@role_required(['instructor'])
+def instructor_course_detail(course_id):
+    instructor_id = session.get('entity_id')
+    
+    # Check if course belongs to instructor
+    course = course_manager.get_course_by_id(course_id)
+    if not course or course.get('InstructorID') != instructor_id:
+        flash('You do not have permission to manage this course.', 'warning')
+        return redirect(url_for('instructor_courses'))
+    
+    # Get lectures
+    lectures = lecture_manager.get_lectures_by_course(course_id)
+    
+    # Get enrollments
+    enrollments = enrollment_manager.get_enrollments_by_course(course_id)
+    
+    return render_template('instructor/course_detail.html', 
+                          course=course,
+                          lectures=lectures,
+                          enrollments=enrollments)
+
+@app.route('/instructor/lecture/add/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['instructor'])
+def instructor_add_lecture(course_id):
+    instructor_id = session.get('entity_id')
+    
+    # Check if course belongs to instructor
+    course = course_manager.get_course_by_id(course_id)
+    if not course or course.get('InstructorID') != instructor_id:
+        flash('You do not have permission to add lectures to this course.', 'warning')
+        return redirect(url_for('instructor_courses'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        
+        lecture_id = lecture_manager.add_lecture(course_id, title, content)
+        
+        if lecture_id:
+            flash('Lecture added successfully!', 'success')
+            return redirect(url_for('instructor_course_detail', course_id=course_id))
+        else:
+            flash('Failed to add lecture.', 'danger')
+    
+    return render_template('instructor/add_lecture.html', course=course)
+
+@app.route('/instructor/lecture/edit/<int:lecture_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['instructor'])
+def instructor_edit_lecture(lecture_id):
+    instructor_id = session.get('entity_id')
+    lecture = lecture_manager.get_lecture_by_id(lecture_id)
+    
+    if not lecture:
+        flash('Lecture does not exist.', 'danger')
+        return redirect(url_for('instructor_courses'))
+    
+    course_id = lecture['CourseID']
+    course = course_manager.get_course_by_id(course_id)
+    
+    # Check if course belongs to instructor
+    if not course or course.get('InstructorID') != instructor_id:
+        flash('You do not have permission to edit this lecture.', 'warning')
+        return redirect(url_for('instructor_courses'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        
+        success = lecture_manager.update_lecture_content(lecture_id, title=title, content=content)
+        
+        if success:
+            flash('Lecture updated successfully!', 'success')
+            return redirect(url_for('instructor_course_detail', course_id=course_id))
+        else:
+            flash('Failed to update the lecture.', 'danger')
+    
+    return render_template('instructor/edit_lecture.html', lecture=lecture, course=course)
+
+@app.route('/instructor/profile', methods=['GET', 'POST'])
+@login_required
+@role_required(['instructor'])
+def instructor_profile():
+    instructor_id = session.get('entity_id')
+    instructor = instructor_manager.get_instructor_by_id(instructor_id)
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        expertise = request.form['expertise']
+        
+        success = instructor_manager.update_instructor_info(
+            instructor_id, name=name, expertise=expertise)
+        
+        if success:
+            flash('Personal information has been updated.', 'success')
+        else:
+            flash('Failed to update information.', 'danger')
+            
+        return redirect(url_for('instructor_profile'))
+        
+    return render_template('instructor/profile.html', instructor=instructor)
+
+# === ADMIN ROUTES ===
+@app.route('/admin')
+@login_required
+@role_required(['admin'])
+def admin_dashboard():
+    learner_count = len(learner_manager.list_all_learners())
+    instructor_count = len(instructor_manager.list_all_instructors())
+    course_count = len(course_manager.list_all_courses())
+    enrollment_count = enrollment_manager.get_enrollment_count()
+    
+    recent_enrollments = enrollment_manager.get_recent_enrollments(10)
+    
+    return render_template('admin/dashboard.html',
+                          learner_count=learner_count,
+                          instructor_count=instructor_count,
+                          course_count=course_count,
+                          enrollment_count=enrollment_count,
+                          recent_enrollments=recent_enrollments)
+
+@app.route('/admin/learners')
+@login_required
+@role_required(['admin'])
+def admin_learners():
     learners = learner_manager.list_all_learners()
-    if not learners:
-        ui.display_message("No learners registered in the system. Cannot proceed.", "error")
-        ui.pause_screen()
-        return
+    return render_template('admin/learners.html', learners=learners)
 
-    ui.display_message("Available Learners:")
-    ui.display_table(["LearnerID", "LearnerName"], learners)
-    learner_id_portal = ui.get_input("Enter Learner ID to access their portal", int, 
-                                     allowed_values=[str(l['LearnerID']) for l in learners])
-    selected_learner = learner_manager.get_learner_by_id(learner_id_portal)
-    if not selected_learner:
-        ui.display_message(f"Learner with ID {learner_id_portal} not found.", "error"); ui.pause_screen(); return
-    learner_name_portal = selected_learner['LearnerName']
-    ui.display_message(f"Welcome to the Learner Portal, {learner_name_portal} (ID: {learner_id_portal})!", "success")
-    ui.pause_screen()
-
-    portal_menu_options = [
-        "View My Enrolled Courses & Progress",
-        "View Available Courses & Enroll",
-        "Access an Enrolled Course (View/Mark Lectures)",
-        "Back to Main Menu"
-    ]
-    while True:
-        ui.display_menu(f"Learner Portal: {learner_name_portal} (ID: {learner_id_portal})", portal_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(portal_menu_options))])
-        try:
-            if choice == 0: # View My Enrolled Courses
-                my_courses = enrollment_manager.get_enrollments_by_learner(learner_id_portal) 
-                print(my_courses)
-                if my_courses:
-                    ui.display_table(["CourseName", "EnrollmentDate", "CompletionStatus", "ProgressPercentage"], 
-                                     [{k: mc[k] for k in ['CourseName', 'EnrollmentDate', 
-                                                                 'CompletionStatus', 'ProgressPercentage'] if k in mc}
-                                                                 for mc in my_courses], 
-                                     "You are NOT enrolled in any courses.")
-                else:
-                    ui.display_message("You are not enrolled in any courses.", "info")
-            elif choice == 1: # View Available Courses & Enroll
-                available_courses = course_manager.list_all_courses() 
-                if not available_courses:
-                    ui.display_message("No courses currently available for enrollment.", "info"); continue
-                ui.display_table(["CourseID", "CourseName", "CourseDescription", "InstructorName"], 
-                                 available_courses)
-                enroll_choice_str = ui.get_input("Enter Course ID to enroll (or 0 to skip)", str, 
-                                             allowed_values=[str(c['CourseID']) for c in available_courses] + ['0'])
-                if enroll_choice_str == '0': continue
-                enroll_choice_id = int(enroll_choice_str)
-                if enrollment_manager.enroll_learner(learner_id_portal, enroll_choice_id):
-                    ui.display_message("Successfully enrolled!", "success")
-                else:
-                    ui.display_message("Enrollment failed (perhaps already enrolled or course issue).", "error")
-            elif choice == 2: # Access an Enrolled Course
-                learner_access_enrolled_course(learner_id_portal, learner_name_portal)
-            elif choice == 3: # Back
-                break
-            if choice != 3: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"Error in Learner Portal: {e}", "error")
-            ui.pause_screen()
-
-def learner_access_enrolled_course(learner_id, learner_name): 
-    # Get learner's enrolled courses
-    enrolled_courses = enrollment_manager.get_enrollments_by_learner(learner_id) 
-    if not enrolled_courses:
-        ui.display_message(f"{learner_name}, you are not enrolled in any courses to access.", "info"); return
-
-    ui.display_message(f"{learner_name}'s Enrolled Courses:")
-    # Display table of enrolled courses
-    ui.display_table(["CourseID", "CourseName", "ProgressPercentage"], 
-                     [{k: ec[k] for k in ['CourseID', 
-                                                        'CourseName', 'ProgressPercentage'] if k in ec}
-                                                        for ec in enrolled_courses])
-    # Input the CourseID to access
-    course_id_to_access = ui.get_input("Enter Course ID to access", int,
-                                       allowed_values=[str(ec['CourseID']) for ec in enrolled_courses])
-    # Get the selected_course 
-    selected_course = next((c for c in enrolled_courses if c['CourseID'] == course_id_to_access), None)
-    if not selected_course:
-        ui.display_message("Invalid course selection.", "error"); return
-    course_name_access = selected_course['CourseName']
+@app.route('/admin/learner/<int:learner_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_learner_detail(learner_id):
+    learner = learner_manager.get_learner_by_id(learner_id)
     
-    while True:
-        ui.display_message(f"\nAccessing Course: {course_name_access} (ID: {course_id_to_access}) for {learner_name}")
-        # current_enrollment_details = enrollment_manager.get_enrollment_details(learner_id, course_id_to_access)
-        # if current_enrollment_details:
-        ui.display_message(f"  Current Progress: {selected_course['ProgressPercentage']}% - Status: {selected_course['CompletionStatus']}")
-        lectures_with_status = lecture_manager.get_lectures_with_view_status(learner_id, course_id_to_access)
-        ui.display_message("Lectures:")
-        ui.display_table(["LectureID", "Title", "ViewStatus", "ViewDate"], 
-                         [{k : l[k] for k in ['LectureID', 'Title',
-                                                                 'ViewStatus', 'ViewDate'] 
-                                                                 if k in l} for l in lectures_with_status], 
-                         "No lectures in this course.")
+    if not learner:
+        flash('Learner does not exist.', 'danger')
+        return redirect(url_for('admin_learners'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        phone = request.form['phone']
+        
+        success = learner_manager.update_learner_info(
+            learner_id, name=name, email=email, phone=phone)
+        
+        if success:
+            flash('Learner information updated successfully!', 'success')
+        else:
+            flash('Failed to update learner information.', 'danger')
+            
+        return redirect(url_for('admin_learner_detail', learner_id=learner_id))
+        
+    enrollments = enrollment_manager.get_enrollments_by_learner(learner_id)
+    
+    return render_template('admin/learner_detail.html', 
+                          learner=learner,
+                          enrollments=enrollments)
 
-        lecture_access_options = ["Back to My Courses List", "View Lecture Content"]
-        ui.display_menu("Lecture Options", lecture_access_options)
-        lec_choice = ui.get_input("Choice", int, allowed_values=[str(i) for i in range(len(lecture_access_options))])
-
-        if lec_choice == 0: break
-        elif lec_choice == 1: # View Content
-            if not lectures_with_status: ui.display_message("No lectures to view.", "info"); ui.pause_screen(); continue
-            not_viewed_lectures = [l for l in lectures_with_status if l['ViewStatus'] == 'Not Viewed']
-            if not not_viewed_lectures:
-                ui.display_message("All lectures in this course have been marked as viewed.", "info"); ui.pause_screen(); continue
-            ui.display_message("Lectures not yet viewed:")
-            ui.display_table(["LectureID", "Title"], [{k:nvl[k] for k in ['LectureID', 'Title'] if k in nvl} for nvl in not_viewed_lectures])
-            lec_id_view = ui.get_input("Enter Lecture ID to view content", int, allowed_values=[str(lws['LectureID']) for lws in not_viewed_lectures])
-            content = lecture_manager.get_lecture_by_id(lec_id_view)
-            if content:
-                ui.display_message(f"\n--- Content: {content['Title']} ---")
-                print(content.get('Content', "No content available."))
-                ui.display_message("--- End of Content ---")
-                if enrollment_manager.mark_lecture_viewed(learner_id, lec_id_view):
-                    ui.display_message("Lecture marked as viewed. Progress has been updated.", "success")
-                else:
-                    ui.display_message("Failed to mark lecture (already viewed or enrollment issue).", "error")
-
-            else: ui.display_message("Lecture not found.", "error")
-            ui.pause_screen()
-
-# --- Instructor Portal Handlers ---
-def handle_instructor_portal():
-    ui.display_message("--- Instructor Portal ---")
+@app.route('/admin/instructors')
+@login_required
+@role_required(['admin'])
+def admin_instructors():
     instructors = instructor_manager.list_all_instructors()
-    if not instructors:
-        ui.display_message("No instructors registered in the system. Cannot proceed.", "error"); ui.pause_screen(); return
-    ui.display_message("Available Instructors:")
-    ui.display_table(["InstructorID", "InstructorName"], 
-                     [{k:i[k] for k in ['InstructorID', 'InstructorName'] if k in i}
-                     for i in instructors], "NO instructors found.")
-    instructor_id_portal = ui.get_input("Enter Instructor ID to access their portal", int, 
-                                        allowed_values=[str(i['InstructorID']) for i in instructors])
-    selected_instructor = instructor_manager.get_instructor_by_id(instructor_id_portal)
-    if not selected_instructor:
-        ui.display_message(f"Instructor with ID {instructor_id_portal} not found.", "error"); ui.pause_screen(); return
-    instructor_name_portal = selected_instructor['InstructorName']
-    ui.display_message(f"Welcome to the Instructor Portal, {instructor_name_portal} (ID: {instructor_id_portal})!", "success")
-    ui.pause_screen()
+    return render_template('admin/instructors.html', instructors=instructors)
+
+@app.route('/admin/courses')
+@login_required
+@role_required(['admin'])
+def admin_courses():
+    courses = course_manager.list_courses_with_details()
+    return render_template('admin/courses.html', courses=courses)
+
+@app.route('/admin/course/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_course_detail(course_id):
+    course = course_manager.get_course_by_id(course_id)
     
-    portal_menu_options = ["View My Assigned Courses", "Manage Lectures for an Assigned Course", 
-                           "View Enrollment Roster & Progress for My Courses", "Back to Main Menu"]
-    while True:
-        ui.display_menu(f"Instructor Portal: {instructor_name_portal} (ID: {instructor_id_portal})", portal_menu_options)
-        choice = ui.get_input("Choice", int, allowed_values=[str(i) for i in range(len(portal_menu_options))])
-        try:
-            if choice == 0: # My Assigned Courses
-                my_courses = course_manager.get_courses_by_instructor(instructor_id_portal)
-                if my_courses:
-                    ui.display_table(["CourseID", "CourseName", "CourseDescription"], 
-                                     [{k: mc[k] for k in ['CourseID', 
-                                                                 'CourseName', "CourseDescription"] if k in mc}
-                                                                 for mc in my_courses], 
-                                     "You are NOT assigned to any courses.")
-                else:
-                    ui.display_message("You are not assigned to any courses.", "info")
-            elif choice == 1: # Manage Lectures
-                my_courses_for_lectures = course_manager.get_courses_by_instructor(instructor_id_portal)
-                if not my_courses_for_lectures: 
-                    ui.display_message("No courses assigned to manage lectures for.", "info"); ui.pause_screen(); continue
-                # Display the courses assigned for instructor
-                ui.display_table(["CourseID", "CourseName"], 
-                                 [{k : c[k] for k in ['CourseID', 'CourseName'] if k in c}
-                                 for c in my_courses_for_lectures])
-                # Input for the courseID to manage its lectures 
-                course_id_for_lectures = ui.get_input("Enter Course ID to manage its lectures", int,
-                                                      allowed_values=[str(c['CourseID']) for c in my_courses_for_lectures])
-                admin_handle_lecture_management(course_id_for_lectures) 
-            elif choice == 2: # View Roster/Progress
-                my_courses_for_roster = course_manager.get_courses_by_instructor(instructor_id_portal)
-                if not my_courses_for_roster: 
-                    ui.display_message("No courses assigned to view rosters for.", "info"); ui.pause_screen(); continue
-                ui.display_table(["CourseID", "CourseName"], [{k : c[k] for k in ['CourseID', 'CourseName'] if k in c}for c in my_courses_for_roster])
-                course_id_for_roster = ui.get_input("Enter Course ID to view roster/progress", int,
-                                                    allowed_values=[str(c['CourseID']) for c in my_courses_for_roster])
-                summary = enrollment_manager.get_course_progress_summary(course_id_for_roster) 
-                if summary:
-                    ui.display_table(["LearnerName", "EnrollmentDate", "CompletionStatus", "ProgressPercentage"],
-                                     [{k : s[k] for k in ['LearnerName', 'EnrollmentDate', 'CompletionStatus', 'ProgressPercentage'] if k in s} for s in summary], 
-                                     "NO enrollment data for this course.")
-                else:
-                    ui.display_message("No enrollment data found for this course.", "info")
-            elif choice == 3: # Back
-                break
-            if choice != 3: ui.pause_screen()
-        except Exception as e:
-            ui.display_message(f"Error in Instructor Portal: {e}", "error")
-            ui.pause_screen()
+    if not course:
+        flash('Course does not exist.', 'danger')
+        return redirect(url_for('admin_courses'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        instructor_id = request.form.get('instructor_id', None)
+        
+        if instructor_id == '':
+            instructor_id = None
+        else:
+            instructor_id = int(instructor_id)
+            
+        success = course_manager.update_course_info(
+            course_id, name=name, description=description, instructor_id=instructor_id)
+        
+        if success:
+            flash('Course information updated successfully!', 'success')
+        else:
+            flash('Failed to update course information.', 'danger')
+            
+        return redirect(url_for('admin_course_detail', course_id=course_id))
+        
+    instructors = instructor_manager.list_all_instructors()
+    lectures = lecture_manager.get_lectures_by_course(course_id)
+    enrollments = enrollment_manager.get_enrollments_by_course(course_id)
+    
+    return render_template('admin/course_detail.html', 
+                          course=course,
+                          instructors=instructors,
+                          lectures=lectures,
+                          enrollments=enrollments)
 
-# --- Administrator Panel Handler ---
-def handle_administrator_panel():
-    admin_menu_options = [
-        "Learner Management", "Instructor Management", "Course Management",
-        "Enrollment Management", "Reporting & Statistics", "Back to Main Menu"
-    ]
-    while True:
-        ui.display_menu("Administrator Panel", admin_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(admin_menu_options))])
-        try:
-            if choice == 0: admin_handle_learner_management()
-            elif choice == 1: admin_handle_instructor_management()
-            elif choice == 2: admin_handle_course_management()
-            elif choice == 3: admin_handle_enrollment_management()
-            elif choice == 4: admin_handle_reports()
-            elif choice == 5: break # Back
-        except Exception as e:
-            ui.display_message(f"An unexpected error in Administrator Panel: {e}", "error")
-            ui.pause_screen()
+@app.route('/admin/reports')
+@login_required
+@role_required(['admin'])
+def admin_reports():
+    instructor_workload = instructor_manager.get_all_instructors_workload()
+    active_courses = course_manager.list_active_courses()
+    
+    return render_template('admin/reports.html',
+                          instructor_workload=instructor_workload,
+                          active_courses=active_courses)
 
-# --- Main Application Loop (Role-Based) ---
-def main():
-    main_menu_options = ["Exit Application", "Learner Portal", "Instructor Portal", "Administrator Panel"]
-    while True:
-        ui.display_menu("Online Course Management System", main_menu_options)
-        choice = ui.get_input("Enter your choice", int, allowed_values=[str(i) for i in range(len(main_menu_options))])
-        if choice == 0: print("\nExiting application. Goodbye!"); break
-        elif choice == 1: handle_learner_portal()
-        elif choice == 2: handle_instructor_portal()
-        elif choice == 3: handle_administrator_panel()
-        # ui.pause_screen() # Consider if pause is needed after returning from a top-level portal to main menu
+@app.route('/admin/add-learner', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_add_learner():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        phone = request.form['phone']
+        password = request.form['password']
+        
+        if not user_manager.is_email_unique(email):
+            flash('Email already exists in the system!', 'danger')
+            return render_template('admin/add_learner.html')
+        
+        learner_id = learner_manager.add_learner(name, email, phone, password)
+        
+        if learner_id:
+            flash(f'Successfully added learner {name}!', 'success')
+            return redirect(url_for('admin_learners'))
+        else:
+            flash('Failed to add learner.', 'danger')
+    
+    return render_template('admin/add_learner.html')
 
-if __name__ == "__main__":
-    main()
+@app.route('/admin/add-instructor', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_add_instructor():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        expertise = request.form['expertise']
+        password = request.form['password']
+        
+        if not user_manager.is_email_unique(email):
+            flash('Email already exists in the system!', 'danger')
+            return render_template('admin/add_instructor.html')
+        
+        instructor_id = instructor_manager.add_instructor(name, expertise, email, password)
+        
+        if instructor_id:
+            flash(f'Successfully added instructor {name}!', 'success')
+            return redirect(url_for('admin_instructors'))
+        else:
+            flash('Failed to add instructor.', 'danger')
+    
+    return render_template('admin/add_instructor.html')
+
+@app.route('/admin/add-course', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_add_course():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        instructor_id = request.form.get('instructor_id', None)
+        
+        if instructor_id == '':
+            instructor_id = None
+        else:
+            instructor_id = int(instructor_id)
+            
+        course_id = course_manager.add_course(name, description, instructor_id)
+        
+        if course_id:
+            flash(f'Successfully added course {name}!', 'success')
+            return redirect(url_for('admin_courses'))
+        else:
+            flash('Failed to add course.', 'danger')
+    
+    instructors = instructor_manager.list_all_instructors()
+    
+    return render_template('admin/add_course.html', instructors=instructors)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')

@@ -8,7 +8,7 @@ def add_course(name, description, instructor_id):
         return None
     try:
         with connection.cursor() as cursor:
-            query = "INSERT INTO Courses (CourseName, CourseDescription, InstructorID) VALUES (%s, %s, %s)"
+            query = "INSERT INTO Courses (CourseName, Description, InstructorID) VALUES (%s, %s, %s)"
             cursor.execute(query, (name, description, instructor_id))
             connection.commit()
             return cursor.lastrowid
@@ -102,30 +102,101 @@ def get_courses_by_instructor(instructor_id):
         connection.close()
 
 def list_courses_with_details():
-    """Retrieve all courses with lecture count and enrollment count."""
+    """List all courses with instructor details and enrollment count."""
     connection = create_connection()
     if not connection:
         return []
+    
     try:
         with connection.cursor(dictionary=True) as cursor:
             query = """
-                SELECT 
-                    C.CourseID, 
-                    C.CourseName, 
-                    C.CourseDescription, 
-                    I.InstructorName, 
-                    COUNT(DISTINCT L.LectureID) AS LectureCount, 
-                    COUNT(DISTINCT E.EnrollmentID) AS EnrollmentCount
-                FROM Courses C
-                LEFT JOIN Instructors I ON C.InstructorID = I.InstructorID
-                LEFT JOIN Lectures L ON C.CourseID = L.CourseID
-                LEFT JOIN Enrollments E ON C.CourseID = E.CourseID
-                GROUP BY C.CourseID, C.CourseName, C.CourseDescription, I.InstructorName
+            SELECT c.CourseID, c.CourseName, c.CourseDescription as Description, c.InstructorID,
+                   i.InstructorName, 
+                   (SELECT COUNT(*) FROM Enrollments WHERE CourseID = c.CourseID) as EnrollmentCount
+            FROM Courses c
+            LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
             """
             cursor.execute(query)
             return cursor.fetchall()
     except Error as e:
         print(f"Error listing courses with details: {e}")
+        return []
+    finally:
+        connection.close()
+
+def list_active_courses():
+    """List all active courses (having at least one enrollment)."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = """
+            SELECT c.CourseID, c.CourseName, c.CourseDescription, c.InstructorID,
+                   i.InstructorName, 
+                   COUNT(e.EnrollmentID) as EnrollmentCount
+            FROM Courses c
+            LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+            JOIN Enrollments e ON c.CourseID = e.CourseID
+            GROUP BY c.CourseID
+            HAVING EnrollmentCount > 0
+            """
+            cursor.execute(query)
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error listing active courses: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_featured_courses(limit=3):
+    """Get a limited number of featured courses for the homepage."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = """
+            SELECT c.CourseID, c.CourseName, c.CourseDescription, c.InstructorID,
+                   i.InstructorName
+            FROM Courses c
+            LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+            ORDER BY c.CourseID DESC  -- Newest courses first
+            LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error getting featured courses: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_recommended_courses(learner_id, limit=3):
+    """Get recommended courses for a learner based on their enrollments."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            # Get courses that the learner is not enrolled in
+            query = """
+            SELECT c.CourseID, c.CourseName, c.CourseDescription, c.InstructorID,
+                   i.InstructorName
+            FROM Courses c
+            LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+            WHERE c.CourseID NOT IN (
+                SELECT CourseID FROM Enrollments WHERE LearnerID = %s
+            )
+            LIMIT %s
+            """
+            cursor.execute(query, (learner_id, limit))
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error getting recommended courses: {e}")
         return []
     finally:
         connection.close()

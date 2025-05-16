@@ -2,14 +2,24 @@ from utils.db_connector import create_connection
 from mysql.connector import Error
 
 def enroll_learner(learner_id, course_id):
-    """Enroll a learner in a course using the stored procedure."""
+    """Enroll a learner in a course."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
         with connection.cursor() as cursor:
-            cursor.callproc('EnrollLearner', (learner_id, course_id))
+            # Check if already enrolled
+            check_query = "SELECT 1 FROM Enrollments WHERE LearnerID = %s AND CourseID = %s"
+            cursor.execute(check_query, (learner_id, course_id))
+            if cursor.fetchone():
+                return True  # Already enrolled
+            
+            # Insert enrollment record
+            query = "INSERT INTO Enrollments (LearnerID, CourseID, EnrollmentDate) VALUES (%s, %s, NOW())"
+            cursor.execute(query, (learner_id, course_id))
             connection.commit()
+            print(f"Debug - Enrolled learner {learner_id} in course {course_id}")
             return True
     except Error as e:
         print(f"Error enrolling learner: {e}")
@@ -18,43 +28,145 @@ def enroll_learner(learner_id, course_id):
         connection.close()
 
 def get_enrollments_by_learner(learner_id):
-    """Retrieve all enrollments for a learner."""
+    """Get all enrollments for a specific learner with course details and progress."""
     connection = create_connection()
     if not connection:
         return []
+    
     try:
         with connection.cursor(dictionary=True) as cursor:
             query = """
-                SELECT E.*, C.CourseName 
-                FROM Enrollments E 
-                JOIN Courses C ON E.CourseID = C.CourseID 
-                WHERE E.LearnerID = %s
+            SELECT e.EnrollmentID, e.CourseID, e.LearnerID, e.EnrollmentDate,
+                   c.CourseName, c.Description,
+                   i.InstructorName,
+                   (SELECT COUNT(*) FROM Lectures WHERE CourseID = c.CourseID) as TotalLectures,
+                   (SELECT COUNT(*) FROM LectureViews lv 
+                    JOIN Lectures l ON lv.LectureID = l.LectureID
+                    WHERE lv.LearnerID = e.LearnerID AND l.CourseID = e.CourseID) as CompletedLectures
+            FROM Enrollments e
+            JOIN Courses c ON e.CourseID = c.CourseID
+            LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+            WHERE e.LearnerID = %s
             """
             cursor.execute(query, (learner_id,))
-            return cursor.fetchall()
+            enrollments = cursor.fetchall()
+            
+            print(f"Debug - SQL query executed for learner_id={learner_id}, found {len(enrollments)} enrollments")
+            
+            # Calculate progress percentage for each enrollment
+            for enrollment in enrollments:
+                total = enrollment['TotalLectures']
+                completed = enrollment['CompletedLectures']
+                if total > 0:
+                    enrollment['ProgressPercentage'] = round((completed / total) * 100)
+                else:
+                    enrollment['ProgressPercentage'] = 0
+                    
+            return enrollments
     except Error as e:
-        print(f"Error retrieving enrollments: {e}")
+        print(f"Error getting enrollments for learner: {e}")
         return []
     finally:
         connection.close()
 
 def get_enrollments_by_course(course_id):
-    """Retrieve all enrollments for a course."""
+    """Get all enrollments for a specific course with learner details."""
     connection = create_connection()
     if not connection:
         return []
+    
     try:
         with connection.cursor(dictionary=True) as cursor:
             query = """
-                SELECT E.*, L.LearnerName 
-                FROM Enrollments E 
-                JOIN Learners L ON E.LearnerID = L.LearnerID 
-                WHERE E.CourseID = %s
+            SELECT e.EnrollmentID, e.CourseID, e.LearnerID, e.EnrollmentDate,
+                   l.LearnerName, l.Email,
+                   (SELECT COUNT(*) FROM Lectures WHERE CourseID = e.CourseID) as TotalLectures,
+                   (SELECT COUNT(*) FROM LectureViews lv 
+                    JOIN Lectures lec ON lv.LectureID = lec.LectureID
+                    WHERE lv.LearnerID = e.LearnerID AND lec.CourseID = e.CourseID) as CompletedLectures
+            FROM Enrollments e
+            JOIN Learners l ON e.LearnerID = l.LearnerID
+            WHERE e.CourseID = %s
             """
             cursor.execute(query, (course_id,))
+            enrollments = cursor.fetchall()
+            
+            # Calculate progress percentage for each enrollment
+            for enrollment in enrollments:
+                total = enrollment['TotalLectures']
+                completed = enrollment['CompletedLectures']
+                if total > 0:
+                    enrollment['ProgressPercentage'] = round((completed / total) * 100)
+                else:
+                    enrollment['ProgressPercentage'] = 0
+                    
+            return enrollments
+    except Error as e:
+        print(f"Error getting enrollments for course: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_enrollment(learner_id, course_id):
+    """Check if a learner is enrolled in a specific course."""
+    connection = create_connection()
+    if not connection:
+        return None
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = """
+            SELECT EnrollmentID, LearnerID, CourseID, EnrollmentDate
+            FROM Enrollments
+            WHERE LearnerID = %s AND CourseID = %s
+            """
+            cursor.execute(query, (learner_id, course_id))
+            return cursor.fetchone()
+    except Error as e:
+        print(f"Error checking enrollment: {e}")
+        return None
+    finally:
+        connection.close()
+
+def get_enrollment_count():
+    """Get the total number of enrollments."""
+    connection = create_connection()
+    if not connection:
+        return 0
+    
+    try:
+        with connection.cursor() as cursor:
+            query = "SELECT COUNT(*) FROM Enrollments"
+            cursor.execute(query)
+            result = cursor.fetchone()
+            return result[0] if result else 0
+    except Error as e:
+        print(f"Error getting enrollment count: {e}")
+        return 0
+    finally:
+        connection.close()
+
+def get_recent_enrollments(limit=10):
+    """Get recent enrollments with learner and course details."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = """
+            SELECT e.EnrollmentID, e.LearnerID, e.CourseID, e.EnrollmentDate,
+                   l.LearnerName, c.CourseName
+            FROM Enrollments e
+            JOIN Learners l ON e.LearnerID = l.LearnerID
+            JOIN Courses c ON e.CourseID = c.CourseID
+            ORDER BY e.EnrollmentDate DESC
+            LIMIT %s
+            """
+            cursor.execute(query, (limit,))
             return cursor.fetchall()
     except Error as e:
-        print(f"Error retrieving enrollments: {e}")
+        print(f"Error getting recent enrollments: {e}")
         return []
     finally:
         connection.close()
@@ -76,57 +188,30 @@ def update_enrollment_status(enrollment_id, status):
     finally:
         connection.close()
 
-def mark_lecture_viewed(learner_id, lecture_id): # Changed signature
-# def mark_lecture_viewed(enrollment_id, lecture_id):
+def mark_lecture_viewed(learner_id, lecture_id):
     """Mark a lecture as viewed by a learner."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
-        # if replace do it from here 
         with connection.cursor() as cursor:
-            query_insert_view = "INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (%s, %s, NOW())"
-            cursor.execute(query_insert_view, (learner_id, lecture_id))
+            # Check if already viewed
+            check_query = "SELECT 1 FROM LectureViews WHERE LearnerID = %s AND LectureID = %s"
+            cursor.execute(check_query, (learner_id, lecture_id))
+            if cursor.fetchone():
+                return True  # Already marked as viewed
+                
+            # Insert view record
+            query = "INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (%s, %s, NOW())"
+            cursor.execute(query, (learner_id, lecture_id))
             connection.commit()
-            return cursor.rowcount > 0 # Will be 1 on successful insert
+            return True
     except Error as e:
-        # Check for specific errors, e.g., duplicate entry if PK (LearnerID, LectureID) on LectureViews is violated
-        if e.errno == 1062: # MySQL error code for duplicate entry
-            print(f"Info: Learner {learner_id} has already viewed lecture {lecture_id}.")
-            return False # Or True if "already viewed" is not an error for the UI
-        elif 'ViewDate must be on or after EnrollmentDate' in str(e): # From your trigger
-            print(f"Error: {e}") # Display the trigger's message
-            return False
-        print(f"Error marking lecture viewed: {e}")
+        print(f"Error marking lecture as viewed: {e}")
         return False
     finally:
-        if connection and connection.is_connected():
-            connection.close()
-
-    #         # Get LearnerID and CourseID from Enrollment
-    #         query = "SELECT LearnerID, CourseID FROM Enrollments WHERE EnrollmentID = %s"
-    #         cursor.execute(query, (enrollment_id,))
-    #         result = cursor.fetchone()
-    #         if not result:
-    #             return False
-    #         learner_id, course_id = result
-
-    #         # Verify Lecture belongs to the Course
-    #         query = "SELECT LectureID FROM Lectures WHERE LectureID = %s AND CourseID = %s"
-    #         cursor.execute(query, (lecture_id, course_id))
-    #         if not cursor.fetchone():
-    #             return False
-
-    #         # Insert into LectureViews
-    #         query = "INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (%s, %s, NOW())"
-    #         cursor.execute(query, (learner_id, lecture_id))
-    #         connection.commit()
-    #         return cursor.rowcount > 0
-    # except Error as e:
-    #     print(f"Error marking lecture viewed: {e}")
-    #     return False
-    # finally:
-    #     connection.close()
+        connection.close()
 
 def get_learner_progress(enrollment_id):
     """Retrieve progress for an enrollment."""

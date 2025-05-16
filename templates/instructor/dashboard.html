@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor Dashboard| Course Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Xin chào, {{ instructor.InstructorName }}!</h1>
+            <p class="text-muted">Specialization: {{ instructor.Expertise }}</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Your courses</h5>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Name</th>
+                                    <th>Number of Learners</th>
+                                    <th>Manage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses %}
+                                <tr>
+                                    <td>{{ course.CourseName }}</td>
+                                    <td>{{ enrollment_stats[course.CourseID] }}</td>
+                                    <td>
+                                        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-primary">Chi tiết</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>You have not been assigned to any courses.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

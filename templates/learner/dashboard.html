@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Learner Dashboard | Course Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Hello, {{ learner.LearnerName }}!</h1>
+            <p class="text-muted">This is your learning space.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Your Courses</h5>
+                </div>
+                <div class="card-body">
+                    {% if enrolled_courses %}
+                    <div class="list-group">
+                        {% for course in enrolled_courses %}
+                        <a href="{{ url_for('learner_course_detail', course_id=course.CourseID) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ course.CourseName }}</h5>
+                            </div>
+                            <!-- Display progress and lectures section -->
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p>You haven't enrolled in any courses yet.</p>
+                    <a href="{{ url_for('browse_courses') }}" class="btn btn-primary">Browse Courses</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if recommended_courses %}
+    <div class="row">
+        <div class="col-md-12">
+            <h3>Recommended Courses</h3>
+            <div class="row">
+                {% for course in recommended_courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.CourseName }}</h5>
+                            <p class="card-text">{{ course.CourseDescription[:100] }}{% if course.CourseDescription and course.CourseDescription|length > 100 %}...{% endif %}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-outline-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

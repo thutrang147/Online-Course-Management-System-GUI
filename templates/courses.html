@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Courses | Online Course Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Explore Courses</h1>
+    
+    <div class="row">
+        {% if courses %}
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.CourseName }}</h5>
+                            <p class="card-text">
+                                {{ course.Description[:120] ~ '...' if course.Description and course.Description|length > 120 else course.Description }}
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">Instructor: {{ course.InstructorName or 'Not assigned yet' }}</small>
+                            </p>
+                            {% if course.EnrollmentCount is defined %}
+                                <p class="card-text">
+                                    <span class="badge bg-info text-dark">{{ course.EnrollmentCount }} students enrolled</span>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-primary">View Details</a>
+                                {% if session.get('role') == 'learner' %}
+                                    <a href="{{ url_for('enroll_course', course_id=course.CourseID) }}" class="btn btn-success">Enroll Now</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    <h4>No courses found.</h4>
+                    <p>There are currently no courses in the system.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

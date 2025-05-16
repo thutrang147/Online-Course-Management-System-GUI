@@ -51,24 +51,29 @@ def get_lectures_by_course(course_id):
         connection.close()
 
 def update_lecture_content(lecture_id, title=None, content=None):
-    """Update lecture information."""
+    """Update lecture content."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
         with connection.cursor() as cursor:
             updates = []
             params = []
-            if title:
+            
+            if title is not None:
                 updates.append("Title = %s")
                 params.append(title)
-            if content:
+            if content is not None:
                 updates.append("Content = %s")
                 params.append(content)
-            if not updates:
-                return False
-            params.append(lecture_id)
+                
+            if not updates:  # No fields to update
+                return True
+                
             query = f"UPDATE Lectures SET {', '.join(updates)} WHERE LectureID = %s"
+            params.append(lecture_id)
+            
             cursor.execute(query, params)
             connection.commit()
             return cursor.rowcount > 0
@@ -95,50 +100,27 @@ def delete_lecture(lecture_id):
     finally:
         connection.close()
 
-def get_lectures_with_view_status(learner_id: int, course_id: int):
-    """
-    Retrieves all lectures for a given course and indicates the view status
-    for a specific learner.
-    Returns:
-        list: A list of dictionaries, where each dictionary represents a lecture
-              and includes 'LectureID', 'Title', 'ViewStatus' ('Viewed' or 'Not Viewed'),
-              and 'ViewDate' (datetime object if viewed, None otherwise).
-              Returns an empty list if no lectures are found or an error occurs.
-    """
+def get_lectures_with_view_status(learner_id, course_id):
+    """Get lectures for a course with view status for a specific learner."""
     connection = create_connection()
     if not connection:
         return []
-
-    lectures_status_data = []
+    
     try:
         with connection.cursor(dictionary=True) as cursor:
-            # Select all lectures for the course.
-            # LEFT JOIN with LectureViews specific to the learner and lecture.
-            # If a match is found in LectureViews, the lecture is 'Viewed'.
-            # Otherwise (due to LEFT JOIN), LectureViews columns will be NULL, indicating 'Not Viewed'.
             query = """
-                SELECT 
-                    L.LectureID,
-                    L.Title,
-                    L.Content, -- Included L.Content in case the UI wants to display it later without another query
-                    CASE 
-                        WHEN LV.LearnerID IS NOT NULL THEN 'Viewed'
-                        ELSE 'Not Viewed'
-                    END AS ViewStatus,
-                    LV.ViewDate
-                FROM Lectures L
-                LEFT JOIN LectureViews LV 
-                    ON L.LectureID = LV.LectureID AND LV.LearnerID = %s  -- Join condition for the specific learner
-                WHERE L.CourseID = %s
-                ORDER BY L.LectureID ASC; -- Or any other preferred order, e.g., L.Title
+            SELECT l.LectureID, l.CourseID, l.Title, l.Content,
+                   CASE WHEN lv.LectureID IS NOT NULL THEN TRUE ELSE FALSE END as Viewed,
+                   lv.ViewDate
+            FROM Lectures l
+            LEFT JOIN LectureViews lv ON l.LectureID = lv.LectureID AND lv.LearnerID = %s
+            WHERE l.CourseID = %s
+            ORDER BY l.LectureID
             """
             cursor.execute(query, (learner_id, course_id))
-            lectures_status_data = cursor.fetchall()
-            
+            return cursor.fetchall()
     except Error as e:
-        print(f"Error retrieving lectures with view status for learner {learner_id}, course {course_id}: {e}")
-        # lectures_status_data remains []
+        print(f"Error getting lectures with view status: {e}")
+        return []
     finally:
-        if connection and connection.is_connected():
-            connection.close()
-    return lectures_status_data
+        connection.close()

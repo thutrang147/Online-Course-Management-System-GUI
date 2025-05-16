@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | Course Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>System Administration</h1>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center bg-primary text-white mb-3">
+                <div class="card-body">
+                    <h2>{{ learner_count }}</h2>
+                    <h5>Learners</h5>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('admin_learners') }}" class="text-white">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center bg-success text-white mb-3">
+                <div class="card-body">
+                    <h2>{{ instructor_count }}</h2>
+                    <h5>Instructors</h5>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('admin_instructors') }}" class="text-white">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center bg-warning text-white mb-3">
+                <div class="card-body">
+                    <h2>{{ course_count }}</h2>
+                    <h5>Courses</h5>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('admin_courses') }}" class="text-white">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center bg-info text-white mb-3">
+                <div class="card-body">
+                    <h2>{{ enrollment_count }}</h2>
+                    <h5>Number of Registrations</h5>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('admin_reports') }}" class="text-white">View Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Recent Registrations</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Learner</th>
+                                    <th>Course</th>
+                                    <th>Registration Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in recent_enrollments %}
+                                <tr>
+                                    <td>{{ enrollment.LearnerName }}</td>
+                                    <td>{{ enrollment.CourseName }}</td>
+                                    <td>{{ enrollment.EnrollmentDate }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>No registrations yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
