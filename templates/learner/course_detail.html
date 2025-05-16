@@ -1,30 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Course Details | {{ course.CourseName if course else 'No course found' }}{% endblock %}
+{% block title %}Course Detail{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mt-4">{{ course.CourseName if course else 'No course found' }}</h1>
-    <p class="text-muted">{{ course.CourseDescription if course else '' }}</p>
+<div class="container mt-4">
+    <h2>{{ course.CourseName }}</h2>
+    <p class="text-muted">{{ course.CourseDescription }}</p>
 
-    <h3 class="mt-5">Lectures</h3>
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <strong>Your Enrollment Info</strong>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong>Enrollment Date:</strong>
+                    {{ enrollment.EnrollmentDate }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Status:</strong>
+                    {{ enrollment.CompletionStatus }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Progress:</strong>
+                    {{ enrollment.ProgressPercentage }}%
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>Lectures</h4>
     {% if lectures and lectures|length > 0 %}
     <ul class="list-group mb-4">
         {% for lecture in lectures %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="{{ url_for('learner_view_lecture', lecture_id=lecture['LectureID']) }}">
-                {{ lecture['Title'] }}
+            <a href="{{ url_for('learner_view_lecture', lecture_id=lecture.LectureID) }}">
+                {{ lecture.Title }}
             </a>
-            {% if lecture['Viewed'] %}
+            {% if lecture.Viewed %}
                 <span class="badge bg-success">Viewed</span>
+            {% else %}
+                <span class="badge bg-secondary">Not Viewed</span>
             {% endif %}
         </li>
         {% endfor %}
     </ul>
     {% else %}
-    <p>No lectures available for this course yet.</p>
+    <p>No lectures found for this course.</p>
     {% endif %}
-
-    <a href="{{ url_for('learner_courses') }}" class="btn btn-secondary">Back to My Courses</a>
 </div>
 {% endblock %}

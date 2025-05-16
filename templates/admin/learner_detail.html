@@ -27,8 +27,38 @@
             </button>
         </div>
     </form>
+
     <hr>
-    <h4 class="mt-4">Enrollments</h4>
+    <h4 class="mt-4">Enrolled Courses & Progress</h4>
+    {% if learner_courses and learner_courses|length > 0 %}
+    <table class="table table-bordered table-hover mb-4">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Enrollment Date</th>
+                <th>Status</th>
+                <th>Completed Lectures</th>
+                <th>Progress (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in learner_courses %}
+            <tr>
+                <td>{{ course.CourseName }}</td>
+                <td>{{ course.EnrollmentDate }}</td>
+                <td>{{ course.CompletionStatus }}</td>
+                <td>{{ course.CompletedLectures }}/{{ course.TotalLectures }}</td>
+                <td>{{ course.ProgressPercentage }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>This learner is not enrolled in any courses.</p>
+    {% endif %}
+
+    <hr>
+    <h4 class="mt-4">Enrollments (Raw Data)</h4>
     {% if enrollments and enrollments|length > 0 %}
     <ul class="list-group mb-4">
         {% for enrollment in enrollments %}

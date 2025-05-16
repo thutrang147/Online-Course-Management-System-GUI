@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Course Summary{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Course Summary: {{ course.CourseName }}</h2>
+    <a href="{{ url_for('admin_course_summary_select') }}" class="btn btn-secondary mb-3">Back to Course Selection</a>
+    {% if summary and summary|length > 0 %}
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Learner Name</th>
+                <th>Enrollment Date</th>
+                <th>Status</th>
+                <th>Progress (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in summary %}
+            <tr>
+                <td>{{ row.LearnerName }}</td>
+                <td>{{ row.EnrollmentDate }}</td>
+                <td>{{ row.CompletionStatus }}</td>
+                <td>{{ row.ProgressPercentage }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No enrollments found for this course.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Select Course for Summary{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Select a Course to View Summary</h2>
+    <form method="post" class="mb-3">
+        <div class="mb-3">
+            <label for="course_id" class="form-label">Course</label>
+            <select class="form-select" id="course_id" name="course_id" required>
+                <option value="">-- Select a course --</option>
+                {% for course in courses %}
+                <option value="{{ course.CourseID }}">{{ course.CourseName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">View Summary</button>
+    </form>
+</div>
+{% endblock %}

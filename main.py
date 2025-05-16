@@ -185,32 +185,38 @@ def learner_courses():
 @role_required(['learner'])
 def learner_course_detail(course_id):
     learner_id = session.get('entity_id')
-    print(f"learner_id: {learner_id}")
     if not learner_id:
         flash('Session expired. Please log in again.', 'danger')
         return redirect(url_for('login'))
 
-    enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
-    print(f"enrollment: {enrollment}")
+    # Get all enrollments for this learner
+    enrollments = enrollment_manager.get_enrollments_by_learner(learner_id)
+    # Find the enrollment for this course
+    enrollment = None
+    if enrollments:
+        for e in enrollments:
+            if e['CourseID'] == course_id:
+                enrollment = e
+                break
+
     if not enrollment:
         flash('Bạn chưa đăng ký khóa học này.', 'warning')
         return redirect(url_for('learner_courses'))
 
     course = course_manager.get_course_by_id(course_id)
-    print(f"course: {course}")
     if not course:
         flash('Course not found.', 'danger')
         return redirect(url_for('learner_courses'))
 
     lectures = lecture_manager.get_lectures_with_view_status(learner_id, course_id)
-    print(f"lectures: {lectures}")
     if lectures is None:
         lectures = []
 
-    return render_template('learner/course_detail.html', 
+    return render_template('learner/course_detail.html',
                            course=course,
                            lectures=lectures,
                            enrollment=enrollment)
+
 @app.route('/learner/lecture/<int:lecture_id>')
 @login_required
 @role_required(['learner'])
@@ -557,11 +563,15 @@ def admin_learner_detail(learner_id):
 
             return redirect(url_for('admin_learner_detail', learner_id=learner_id))
 
+    # Get all enrollments for this learner (with course progress)
+    learner_courses = enrollment_manager.get_enrollments_by_learner(learner_id)
+    # Get all enrollments (for the list below, if you want to keep it)
     enrollments = enrollment_manager.get_enrollments_by_learner(learner_id)
 
     return render_template('admin/learner_detail.html',
-                          learner=learner,
-                          enrollments=enrollments)
+                           learner=learner,
+                           learner_courses=learner_courses,
+                           enrollments=enrollments)
 
 @app.route('/admin/instructors')
 @login_required
@@ -821,5 +831,30 @@ def admin_add_course():
     instructors = instructor_manager.list_all_instructors()
     
     return render_template('admin/add_course.html', instructors=instructors)
+
+@app.route('/admin/course_summary/select', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_course_summary_select():
+    courses = course_manager.list_all_courses()
+    if request.method == 'POST':
+        course_id = request.form.get('course_id')
+        if course_id:
+            return redirect(url_for('admin_course_summary', course_id=course_id))
+        else:
+            flash('Please select a course.', 'warning')
+    return render_template('admin/course_summary_select.html', courses=courses)
+
+@app.route('/admin/course_summary/<int:course_id>')
+@login_required
+@role_required(['admin'])
+def admin_course_summary(course_id):
+    course = course_manager.get_course_by_id(course_id)
+    if not course:
+        flash('Course does not exist.', 'danger')
+        return redirect(url_for('admin_course_summary_select'))
+    summary = enrollment_manager.get_course_progress_summary(course_id)
+    return render_template('admin/course_summary.html', course=course, summary=summary)
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
