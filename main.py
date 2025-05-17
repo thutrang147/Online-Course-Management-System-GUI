@@ -250,9 +250,8 @@ def learner_profile():
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
-        print(f"Debug - Learner profile update - name: {name}, phone: {phone}")
-        success = learner_manager.update_learner_info(
-            learner_id, name=name, phone=phone)
+        # not using email here as it is not editable
+        success = learner_manager.update_learner_info(learner_id, name=name, phone=phone)
         
         if success:
             flash('Your personal information has been updated.', 'success')

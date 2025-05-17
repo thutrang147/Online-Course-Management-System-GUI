@@ -62,7 +62,7 @@ This is a comprehensive online course management system built with Flask and MyS
    After setting up the database, you can use the following default user accounts to log in. These are automatically inserted into the database during setup.
 
    - **Administrator**
-      - Username: `admin@system`
+      - Username: `admin@system.com`
       - Password: `admin`
 
    - **Instructor**

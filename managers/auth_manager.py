@@ -16,7 +16,7 @@ def authenticate(email, password):
     if not valid:
         return None
     
-    # Tìm ID tương ứng từ bảng Learners/Instructors
+    # find the corresponding ID from the Learners/Instructors table
     entity_id = None
     if user['Role'] == 'learner':
         learner = learner_manager.get_learner_by_user_id(user['UserID'])
@@ -25,7 +25,7 @@ def authenticate(email, password):
         instructor = instructor_manager.get_instructor_by_user_id(user['UserID'])
         entity_id = instructor['InstructorID'] if instructor else None
     elif user['Role'] == 'admin':
-        entity_id = 0  # Admin không cần ID từ bảng khác
+        entity_id = 0  # admin doesn't need ID from other tables
         
     return {
         'role': user['Role'],

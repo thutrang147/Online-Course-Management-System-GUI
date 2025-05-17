@@ -12,7 +12,6 @@ def add_learner(name, email, phone, password):
     
     try:
         connection.start_transaction()
-        # Delete if too buggy 
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # 1. Create user account first
@@ -22,10 +21,10 @@ def add_learner(name, email, phone, password):
             print("Failed to create user account.")
             return None
         
-        # 2. Create learner profile
+        # 2. create learner profile
         with connection.cursor() as cursor:
-            query = "INSERT INTO Learners (LearnerName, Email, PhoneNumber, UserID) VALUES (%s, %s, %s, %s)"
-            cursor.execute(query, (name, email, phone, user_id))
+            query = "INSERT INTO Learners (LearnerName, PhoneNumber, UserID) VALUES (%s, %s, %s)"
+            cursor.execute(query, (name, phone, user_id))
             learner_id = cursor.lastrowid
             
         connection.commit()
@@ -39,13 +38,19 @@ def add_learner(name, email, phone, password):
         connection.close()
 
 def get_learner_by_id(learner_id):
-    """Retrieve a learner by their ID."""
+    """Get learner information by ID including email."""
     connection = create_connection()
     if not connection:
         return None
     try:
         with connection.cursor(dictionary=True) as cursor:
-            query = "SELECT * FROM Learners WHERE LearnerID = %s"
+            # JOIN with Users to get email
+            query = """
+                SELECT l.LearnerID, l.LearnerName, u.Email, l.PhoneNumber, l.UserID
+                FROM Learners l
+                JOIN Users u ON l.UserID = u.UserID
+                WHERE l.LearnerID = %s
+            """
             cursor.execute(query, (learner_id,))
             return cursor.fetchone()
     except Error as e:
@@ -62,7 +67,13 @@ def get_learner_by_email(email):
     
     try:
         with connection.cursor(dictionary=True) as cursor:
-            query = "SELECT * FROM Learners WHERE Email = %s"
+            # fix the query to use the correct table and join
+            query = """
+                SELECT L.* 
+                FROM Learners L 
+                JOIN Users U ON L.UserID = U.UserID 
+                WHERE U.Email = %s
+            """
             cursor.execute(query, (email,))
             return cursor.fetchone()
     except Error as e:
@@ -87,7 +98,7 @@ def get_learner_by_user_id(user_id):
     finally:
         connection.close()
 
-def update_learner_info(learner_id, name=None, email=None, phone=None):
+def update_learner_info(learner_id, name=None, phone=None):
     """Update learner information."""
     connection = create_connection()
     if not connection:
@@ -99,9 +110,6 @@ def update_learner_info(learner_id, name=None, email=None, phone=None):
             if name:
                 updates.append("LearnerName = %s")
                 params.append(name)
-            if email:
-                updates.append("Email = %s")
-                params.append(email)
             if phone:
                 updates.append("PhoneNumber = %s")
                 params.append(phone)
@@ -119,17 +127,23 @@ def update_learner_info(learner_id, name=None, email=None, phone=None):
         connection.close()
 
 def list_all_learners():
-    """Retrieve all learners."""
+    """Get all learners with their information including email."""
     connection = create_connection()
     if not connection:
         return []
     try:
         with connection.cursor(dictionary=True) as cursor:
-            query = "SELECT * FROM Learners"
+            # join with Users to get email
+            query = """
+                SELECT l.LearnerID, l.LearnerName, u.Email, l.PhoneNumber
+                FROM Learners l
+                JOIN Users u ON l.UserID = u.UserID
+                ORDER BY l.LearnerName
+            """
             cursor.execute(query)
             return cursor.fetchall()
     except Error as e:
-        print(f"Error listing learners: {e}")
+        print(f"Error retrieving learners: {e}")
         return []
     finally:
         connection.close()
@@ -157,8 +171,14 @@ def check_password(learner_id, password):
     if not connection:
         return False
     try:
-        with connection.cursor() as cursor:
-            query = "SELECT Password FROM Learners WHERE LearnerID = %s"
+        with connection.cursor(dictionary=True) as cursor:
+            # fix the query to use the correct table and join
+            query = """
+                SELECT U.Password 
+                FROM Users U
+                JOIN Learners L ON U.UserID = L.UserID
+                WHERE L.LearnerID = %s
+            """
             cursor.execute(query, (learner_id,))
             result = cursor.fetchone()
             if result and result['Password'] == password:
