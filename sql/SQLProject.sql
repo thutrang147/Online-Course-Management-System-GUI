@@ -8,6 +8,15 @@ USE OnlineCourses;
 -- enrollments, and lecture views. Includes constraints and referential integrity.
 -- ============================================================================
 
+-- Users Table: Manages user authentication and roles.
+CREATE TABLE Users (
+    UserID INT AUTO_INCREMENT PRIMARY KEY,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Password VARCHAR(100) NOT NULL,
+    Role ENUM('learner', 'instructor', 'admin') NOT NULL,
+    LastLogin DATETIME NULL
+);
+
 -- Learners Table: Manages learner information.
 CREATE TABLE Learners (
     LearnerID INT AUTO_INCREMENT PRIMARY KEY,
@@ -311,6 +320,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.Courses TO 'admin_app_user
 GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.Lectures TO 'admin_app_user'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.Enrollments TO 'admin_app_user'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.LectureViews TO 'admin_app_user'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.Users TO 'admin_app_user'@'%';
 GRANT SELECT ON OnlineCourses.EnrollmentLogs TO 'admin_app_user'@'%'; -- Read-only on logs
 -- Grant SELECT on views
 GRANT SELECT ON OnlineCourses.LearnerCourseProgress TO 'admin_app_user'@'%';
@@ -408,29 +418,12 @@ INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (3, 10, '2024-0
 INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (4, 11, '2024-02-11 08:30:00'); 
 INSERT INTO LectureViews (LearnerID, LectureID, ViewDate) VALUES (4, 12, '2024-02-12 11:45:00');
 
--- ============================================================================
--- USER MANAGEMENT
--- Creates a Users table for authentication and authorization.
-CREATE TABLE Users (
-    UserID INT AUTO_INCREMENT PRIMARY KEY,
-    Email VARCHAR(100) UNIQUE NOT NULL,
-    Password VARCHAR(100) NOT NULL,
-    Role ENUM('learner', 'instructor', 'admin') NOT NULL,
-    LastLogin DATETIME NULL
-);
-
-
-ALTER TABLE Learners ADD COLUMN UserID INT UNIQUE,
-ADD FOREIGN KEY (UserID) REFERENCES Users(UserID);
-
-ALTER TABLE Instructors ADD COLUMN UserID INT UNIQUE,
-ADD FOREIGN KEY (UserID) REFERENCES Users(UserID);
 
 -- Insert sample users
 INSERT INTO Users (Email, Password, Role) 
 VALUES ('admin@system', 'admin', 'admin');
 
--- Tạo user cho các Learners và Instructors đã có
+-- Insert sample learners and instructors
 INSERT INTO Users (Email, Password, Role)
 SELECT Email, 'learner', 'learner' 
 FROM Learners;
@@ -439,7 +432,7 @@ INSERT INTO Users (Email, Password, Role)
 SELECT Email, 'instructor', 'instructor'
 FROM Instructors;
 
--- Liên kết UserID
+-- Link Users to Learners and Instructors
 UPDATE Learners L
 JOIN Users U ON L.Email = U.Email
 SET L.UserID = U.UserID;
@@ -448,7 +441,6 @@ UPDATE Instructors I
 JOIN Users U ON I.Email = U.Email
 SET I.UserID = U.UserID;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON OnlineCourses.Users TO 'admin_app_user'@'%';
 
 
 

@@ -6,7 +6,7 @@
 <div class="container">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h1>Xin chào, {{ instructor.InstructorName }}!</h1>
+            <h1>Hello, {{ instructor.InstructorName }}!</h1>
             <p class="text-muted">Specialization: {{ instructor.Expertise }}</p>
         </div>
         <div class="col-md-4 d-flex align-items-start justify-content-end">
@@ -37,7 +37,7 @@
                                     <td>{{ course.CourseName }}</td>
                                     <td>{{ enrollment_stats[course.CourseID] }}</td>
                                     <td>
-                                        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-primary">Chi tiết</a>
+                                        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-primary">View Details</a>
                                     </td>
                                 </tr>
                                 {% endfor %}

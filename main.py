@@ -200,7 +200,7 @@ def learner_course_detail(course_id):
                 break
 
     if not enrollment:
-        flash('Bạn chưa đăng ký khóa học này.', 'warning')
+        flash('You’re not enrolled in this course.', 'warning')
         return redirect(url_for('learner_courses'))
 
     course = course_manager.get_course_by_id(course_id)
