@@ -12,19 +12,17 @@ def add_learner(name, email, phone, password):
     
     try:
         connection.start_transaction()
-        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
-        # 1. Create user account first
-        user_id = user_manager.create_user(email, hashed, 'learner')
+        user_id = user_manager.create_user(email, password, 'learner')
+        
         if not user_id:
             connection.rollback()
-            print("Failed to create user account.")
+            print("Failed to create user account")
             return None
         
-        # 2. create learner profile
         with connection.cursor() as cursor:
-            query = "INSERT INTO Learners (LearnerName, PhoneNumber, UserID) VALUES (%s, %s, %s)"
-            cursor.execute(query, (name, phone, user_id))
+            query = "INSERT INTO Learners (UserID, LearnerName, PhoneNumber) VALUES (%s, %s, %s)"
+            cursor.execute(query, (user_id, name, phone))
             learner_id = cursor.lastrowid
             
         connection.commit()
@@ -83,7 +81,7 @@ def get_learner_by_email(email):
         connection.close()
 
 def get_learner_by_user_id(user_id):
-    """Retrieve a learner by their User ID."""
+    """Get learner details by UserID."""
     connection = create_connection()
     if not connection:
         return None
@@ -93,7 +91,7 @@ def get_learner_by_user_id(user_id):
             cursor.execute(query, (user_id,))
             return cursor.fetchone()
     except Error as e:
-        print(f"Error retrieving learner by user ID: {e}")
+        print(f"Error getting learner by user ID: {e}")
         return None
     finally:
         connection.close()

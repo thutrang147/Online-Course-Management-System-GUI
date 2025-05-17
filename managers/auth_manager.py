@@ -16,6 +16,9 @@ def authenticate(email, password):
     if not valid:
         return None
     
+    # Update last login 
+    user_manager.update_last_login(user['UserID'])
+
     # find the corresponding ID from the Learners/Instructors table
     entity_id = None
     if user['Role'] == 'learner':
