@@ -13,8 +13,7 @@ def add_instructor(name, expertise, email, password):
         connection.start_transaction()
         
         # 1. Create user first
-        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        user_id = user_manager.create_user(email, hashed, 'instructor')
+        user_id = user_manager.create_user(email, password, 'instructor')
         if not user_id:
             connection.rollback()
             print("Failed to create user account")
