@@ -79,11 +79,12 @@ def get_enrollments_by_course(course_id):
         with connection.cursor(dictionary=True) as cursor:
             query = """
             SELECT e.EnrollmentID, e.CourseID, e.LearnerID, e.EnrollmentDate,
-                   l.LearnerName, l.Email,
+                   l.LearnerName, 
                    (SELECT COUNT(*) FROM Lectures WHERE CourseID = e.CourseID) as TotalLectures,
                    (SELECT COUNT(*) FROM LectureViews lv 
                     JOIN Lectures lec ON lv.LectureID = lec.LectureID
-                    WHERE lv.LearnerID = e.LearnerID AND lec.CourseID = e.CourseID) as CompletedLectures
+                    WHERE lv.LearnerID = e.LearnerID AND lec.CourseID = e.CourseID) as CompletedLectures,
+                   (SELECT COUNT(DISTINCT Enr.LearnerID) FROM Enrollments Enr WHERE Enr.CourseID = e.CourseID) as TotalLearner
             FROM Enrollments e
             JOIN Learners l ON e.LearnerID = l.LearnerID
             WHERE e.CourseID = %s

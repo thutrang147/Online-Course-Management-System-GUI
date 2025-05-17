@@ -369,7 +369,7 @@ def instructor_dashboard():
         course_id = course['CourseID']
         enrollments = enrollment_manager.get_enrollments_by_course(course_id)
         enrollment_stats[course_id] = len(enrollments) if enrollments else 0
-    
+    print(f"Debug - Enrollment stats: {enrollment_stats}")
     return render_template('instructor/dashboard.html', 
                           instructor=instructor,
                           courses=courses,
