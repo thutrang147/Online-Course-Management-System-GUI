@@ -3,6 +3,28 @@
 {% block title %}Admin Dashboard | Course Management System{% endblock %}
 
 {% block content %}
+<style>
+    /* Make dashboard cards the same height */
+    .dashboard-card {
+        min-height: 190px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .dashboard-card .card-body {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .dashboard-card .card-footer {
+        background: rgba(0,0,0,0.05);
+        min-height: 75px; /* Add this line to increase footer height */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
 <div class="container">
     <div class="row mb-4">
         <div class="col-md-12">
@@ -12,7 +34,7 @@
 
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-center bg-primary text-white mb-3">
+            <div class="card text-center bg-primary text-white mb-3 dashboard-card">
                 <div class="card-body">
                     <h2>{{ learner_count }}</h2>
                     <h5>Learners</h5>
@@ -24,7 +46,7 @@
         </div>
         
         <div class="col-md-3">
-            <div class="card text-center bg-success text-white mb-3">
+            <div class="card text-center bg-success text-white mb-3 dashboard-card">
                 <div class="card-body">
                     <h2>{{ instructor_count }}</h2>
                     <h5>Instructors</h5>
@@ -36,7 +58,7 @@
         </div>
         
         <div class="col-md-3">
-            <div class="card text-center bg-warning text-white mb-3">
+            <div class="card text-center bg-warning text-white mb-3 dashboard-card">
                 <div class="card-body">
                     <h2>{{ course_count }}</h2>
                     <h5>Courses</h5>
@@ -48,13 +70,13 @@
         </div>
         
         <div class="col-md-3">
-            <div class="card text-center bg-info text-white mb-3">
+            <div class="card text-center bg-info text-white mb-3 dashboard-card">
                 <div class="card-body">
                     <h2>{{ enrollment_count }}</h2>
-                    <h5>Number of Registrations</h5>
+                    <h5>Registrations</h5>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('admin_reports') }}" class="text-white">View Reports</a>
+                    <a href="{{ url_for('admin_reports') }}" class="text-white">View WorkLoad and Active Courses</a>
                 </div>
             </div>
         </div>
