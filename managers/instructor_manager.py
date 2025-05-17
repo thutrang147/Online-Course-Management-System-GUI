@@ -247,13 +247,16 @@ def get_all_instructors_workload():
     try:
         with connection.cursor(dictionary=True) as cursor:
             query = """
-                SELECT i.InstructorID, i.InstructorName, u.Email,
-                       COUNT(c.CourseID) as CourseCount
-                FROM Instructors i
-                JOIN Users u ON i.UserID = u.UserID
-                LEFT JOIN Courses c ON i.InstructorID = c.InstructorID
-                GROUP BY i.InstructorID, i.InstructorName, u.Email
-                ORDER BY CourseCount DESC
+            SELECT i.InstructorID, i.InstructorName, u.Email, i.Expertise,
+                COUNT(DISTINCT c.CourseID) as CourseCount,
+                COUNT(DISTINCT e.LearnerID) as LearnerCount,
+                COUNT(DISTINCT l.LectureID) as LectureCount
+            FROM Instructors i
+            JOIN Users u ON i.UserID = u.UserID
+            LEFT JOIN Courses c ON i.InstructorID = c.InstructorID
+            LEFT JOIN Enrollments e ON c.CourseID = e.CourseID
+            LEFT JOIN Lectures l ON c.CourseID = l.CourseID
+            GROUP BY i.InstructorID, i.InstructorName, u.Email, i.Expertise
             """
             cursor.execute(query)
             return cursor.fetchall()
