@@ -280,7 +280,7 @@ def change_password():
         if not user:
             flash('User not found!', 'danger')
             return redirect(url_for('change_password'))
-        if user['Password'] != current_password:
+        if not (user['Password'] == current_password or check_password_hash(user['Password'], current_password)):
             flash('Current password is incorrect!', 'danger')
             return redirect(url_for('change_password'))
             

@@ -1,5 +1,6 @@
 from utils.db_connector import create_connection
 from mysql.connector import Error
+import bcrypt
 
 def create_user(email, password, role):
     """Create a new user in the Users table."""
@@ -7,9 +8,10 @@ def create_user(email, password, role):
     if not connection:
         return None
     try:
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         with connection.cursor() as cursor:
             query = "INSERT INTO Users (Email, Password, Role) VALUES (%s, %s, %s)"
-            cursor.execute(query, (email, password, role))
+            cursor.execute(query, (email, hashed_password, role))
             connection.commit()
             return cursor.lastrowid
         
@@ -57,9 +59,10 @@ def update_password(user_id, new_password):
     if not connection:
         return False
     try:
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         with connection.cursor() as cursor:
             query = "UPDATE Users SET Password = %s WHERE UserID = %s"
-            cursor.execute(query, (new_password, user_id))
+            cursor.execute(query, (hashed_password, user_id))
             connection.commit()
             return cursor.rowcount > 0
     except Error as e:
