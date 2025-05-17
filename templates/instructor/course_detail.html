@@ -1,51 +1,58 @@
 {% extends "base.html" %}
 
-{% block title %}Instructor | {{ course.CourseName }} Details{% endblock %}
+{% block title %}Course Detail | Instructor{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>{{ course.CourseName }}</h1>
-    <p class="text-muted">{{ course.CourseDescription }}</p>
+    <h2>Course: {{ course.CourseName }}</h2>
+    <p>{{ course.CourseDescription }}</p>
 
-    <div class="mb-4">
-        <a href="{{ url_for('instructor_add_lecture', course_id=course.CourseID) }}" class="btn btn-primary">Add Lecture</a>
-        <a href="{{ url_for('instructor_dashboard') }}" class="btn btn-secondary">Back to My Courses</a>
-    </div>
-
-    <h3>Lectures</h3>
+    <hr>
+    <h4>Lectures</h4>
     {% if lectures and lectures|length > 0 %}
-    <ul class="list-group mb-4">
-        {% for lecture in lectures %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ lecture.Title }}</span>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('instructor_view_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-outline-info">View</a>
-                <a href="{{ url_for('instructor_edit_lecture', lecture_id=lecture.LectureID) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Lecture Title</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lecture in lectures %}
+            <tr>
+                <td>{{ lecture.Title }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% else %}
-    <p>No lectures have been added to this course yet.</p>
+    <p>No lectures found for this course.</p>
     {% endif %}
 
-    <h3>Enrolled Learners</h3>
+    <hr>
+    <h4 class="mt-4">Enrolled Learners</h4>
     {% if enrollments and enrollments|length > 0 %}
-    <ul class="list-group">
-        {% for enrollment in enrollments %}
-        <li class="list-group-item">
-            Learner ID: {{ enrollment.LearnerID }}
-            {% if enrollment.LearnerName %}
-                - {{ enrollment.LearnerName }}
-            {% endif %}
-            {% if enrollment.EnrollmentDate %}
-                <span class="text-muted"> (Enrolled: {{ enrollment.EnrollmentDate }})</span>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Name</th>
+                <th>Enrollment Date</th>
+                <th>Completion Status</th>
+                <th>Progress (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for learner in enrollments %}
+            <tr>
+                <td>{{ learner.LearnerName }}</td>
+                <td>{{ learner.EnrollmentDate }}</td>
+                <td>{{ learner.CompletionStatus }}</td>
+                <td>{{ learner.ProgressPercentage }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% else %}
-    <p>No learners have enrolled in this course yet.</p>
+    <p>No learners enrolled in this course.</p>
     {% endif %}
 </div>
 {% endblock %}

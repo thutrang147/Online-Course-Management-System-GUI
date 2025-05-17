@@ -56,25 +56,5 @@
     {% else %}
     <p>This learner is not enrolled in any courses.</p>
     {% endif %}
-
-    <hr>
-    <h4 class="mt-4">Enrollments (Raw Data)</h4>
-    {% if enrollments and enrollments|length > 0 %}
-    <ul class="list-group mb-4">
-        {% for enrollment in enrollments %}
-        <li class="list-group-item">
-            Course ID: {{ enrollment.CourseID }}
-            {% if enrollment.CourseName %}
-                - {{ enrollment.CourseName }}
-            {% endif %}
-            {% if enrollment.EnrollmentDate %}
-                <span class="text-muted">(Enrolled: {{ enrollment.EnrollmentDate }})</span>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No enrollments found for this learner.</p>
-    {% endif %}
 </div>
 {% endblock %}

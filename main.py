@@ -399,8 +399,8 @@ def instructor_course_detail(course_id):
     # Get lectures
     lectures = lecture_manager.get_lectures_by_course(course_id)
     
-    # Get enrollments
-    enrollments = enrollment_manager.get_enrollments_by_course(course_id)
+    # Get detailed learner progress using get_course_progress_summary
+    enrollments = enrollment_manager.get_course_progress_summary(course_id)
     
     return render_template('instructor/course_detail.html', 
                           course=course,
@@ -476,6 +476,7 @@ def instructor_edit_lecture(lecture_id):
             else:
                 flash('Failed to update the lecture.', 'danger')
     return render_template('instructor/edit_lecture.html', lecture=lecture, course=course)
+
 
 @app.route('/instructor/profile', methods=['GET', 'POST'])
 @login_required
