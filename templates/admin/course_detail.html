@@ -63,24 +63,5 @@
     {% else %}
     <p>No lectures found for this course.</p>
     {% endif %}
-    <hr>
-    <h4 class="mt-4">Enrolled Learners</h4>
-    {% if enrollments and enrollments|length > 0 %}
-    <ul class="list-group mb-4">
-        {% for enrollment in enrollments %}
-        <li class="list-group-item">
-            Learner ID: {{ enrollment.LearnerID }}
-            {% if enrollment.LearnerName %}
-                - {{ enrollment.LearnerName }}
-            {% endif %}
-            {% if enrollment.EnrollmentDate %}
-                <span class="text-muted">(Enrolled: {{ enrollment.EnrollmentDate }})</span>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No learners enrolled in this course.</p>
-    {% endif %}
 </div>
 {% endblock %}

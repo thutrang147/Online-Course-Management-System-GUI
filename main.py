@@ -666,13 +666,11 @@ def admin_course_detail(course_id):
         
     instructors = instructor_manager.list_all_instructors()
     lectures = lecture_manager.get_lectures_by_course(course_id)
-    enrollments = enrollment_manager.get_enrollments_by_course(course_id)
     
     return render_template('admin/course_detail.html', 
                           course=course,
                           instructors=instructors,
-                          lectures=lectures,
-                          enrollments=enrollments)
+                          lectures=lectures)
 
 # Add to main.py
 
