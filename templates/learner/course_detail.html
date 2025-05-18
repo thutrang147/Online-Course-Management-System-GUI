@@ -26,6 +26,36 @@
                     {{ enrollment.ProgressPercentage }}%
                 </li>
             </ul>
+            
+            <!-- Add unenroll button -->
+            <div class="mt-3">
+                <a href="#" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#unenrollModal">
+                    <i class="fas fa-times-circle me-2"></i>Unenroll from Course
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unenroll Confirmation Modal -->
+    <div class="modal fade" id="unenrollModal" tabindex="-1" aria-labelledby="unenrollModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="unenrollModalLabel">Confirm Unenrollment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to unenroll from <strong>{{ course.CourseName }}</strong>?</p>
+                    <ul>
+                        <li>Your progress in this course will be lost</li>
+                        <li>You will need to re-enroll if you want to access this course again</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{{ url_for('unenroll_course', course_id=course.CourseID) }}" class="btn btn-danger">Unenroll</a>
+                </div>
+            </div>
         </div>
     </div>
 
