@@ -96,29 +96,50 @@ def get_learner_by_user_id(user_id):
     finally:
         connection.close()
 
-def update_learner_info(learner_id, name=None, phone=None):
+def update_learner_info(learner_id, name=None, phone=None, email=None):
     """Update learner information."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
-        with connection.cursor() as cursor:
-            updates = []
-            params = []
-            if name:
-                updates.append("LearnerName = %s")
-                params.append(name)
-            if phone:
-                updates.append("PhoneNumber = %s")
-                params.append(phone)
-            if not updates:
-                return False
-            params.append(learner_id)
-            query = f"UPDATE Learners SET {', '.join(updates)} WHERE LearnerID = %s"
-            cursor.execute(query, params)
-            connection.commit()
-            return cursor.rowcount > 0
+        connection.start_transaction()
+        
+        # Update learner table
+        learner_updates = []
+        learner_params = []
+        
+        if name:
+            learner_updates.append("LearnerName = %s")
+            learner_params.append(name)
+            
+        if phone:
+            learner_updates.append("PhoneNumber = %s")
+            learner_params.append(phone)
+            
+        if learner_updates:
+            learner_params.append(learner_id)
+            learner_query = f"UPDATE Learners SET {', '.join(learner_updates)} WHERE LearnerID = %s"
+            
+            with connection.cursor() as cursor:
+                cursor.execute(learner_query, learner_params)
+        
+        # Update email in Users table if needed
+        if email:
+            # Get the UserID from Learners table
+            with connection.cursor(dictionary=True) as cursor:
+                cursor.execute("SELECT UserID FROM Learners WHERE LearnerID = %s", (learner_id,))
+                result = cursor.fetchone()
+                
+                if result and 'UserID' in result:
+                    user_id = result['UserID']
+                    cursor.execute("UPDATE Users SET Email = %s WHERE UserID = %s", (email, user_id))
+        
+        connection.commit()
+        return True
+        
     except Error as e:
+        connection.rollback()
         print(f"Error updating learner: {e}")
         return False
     finally:
