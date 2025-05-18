@@ -250,6 +250,21 @@ def unenroll_from_course(learner_id, course_id):
         return False
     try:
         with connection.cursor() as cursor:
+            # First, get all lecture IDs for this course
+            course_lectures_query = "SELECT LectureID FROM Lectures WHERE CourseID = %s"
+            cursor.execute(course_lectures_query, (course_id,))
+            lecture_ids = [row[0] for row in cursor.fetchall()]
+            
+            # Delete lecture view records if there are lectures
+            if lecture_ids:
+                # Delete all lecture views for this learner in this course
+                delete_views_query = "DELETE FROM LectureViews WHERE LearnerID = %s AND LectureID IN ({})".format(
+                    ','.join(['%s'] * len(lecture_ids))
+                )
+                cursor.execute(delete_views_query, (learner_id, *lecture_ids))
+                print(f"Deleted {cursor.rowcount} lecture view records")
+            
+            # Now delete the enrollment record
             query = "DELETE FROM Enrollments WHERE LearnerID = %s AND CourseID = %s"
             cursor.execute(query, (learner_id, course_id))
             connection.commit()
