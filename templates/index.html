@@ -22,32 +22,107 @@
     </div>
 </div>
 
-<!-- Featured courses section -->
-<h2 class="mb-4"><i class="fas fa-star me-2 text-warning"></i>Featured Courses</h2>
-<div class="row">
-    {% if courses %}
-        {% for course in courses %}
-            <div class="col-md-4 mb-4">
-                <div class="card course-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ course.CourseName }}</h5>
-                        <p class="card-text">{{ course.Description[:100] ~ '...' if course.Description and course.Description|length > 100 else course.Description }}</p>
-                        <p class="card-text"><small class="text-muted">Instructor: {{ course.InstructorName or 'Not assigned yet' }}</small></p>
-                    </div>
-                    <div class="card-footer bg-transparent border-top-0">
-                        <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-primary">Details</a>
+<!-- Featured courses section with icons instead of images -->
+<div class="container my-5">
+    <h2 class="mb-4 d-flex align-items-center">
+        <i class="fas fa-star text-warning me-3"></i>
+        <span class="border-bottom border-warning pb-2">Featured Courses</span>
+    </h2>
+    
+    <div class="row">
+        {% if courses %}
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm course-card">
+                        <!-- Course card with consistent book icon -->
+                        <div class="card-img-top text-center p-4 bg-light">
+                            <i class="fas fa-book-open fa-5x text-primary icon-pulse"></i>
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-primary">{{ course.CourseName }}</h5>
+                            <p class="card-text flex-grow-1 text-muted">
+                                {{ course.Description[:100] ~ '...' if course.Description and course.Description|length > 100 else course.Description }}
+                            </p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div>
+                                    <p class="card-text mb-0">
+                                        <i class="fas fa-chalkboard-teacher text-muted me-2"></i>
+                                        <small class="text-muted">{{ course.InstructorName or 'Not assigned yet' }}</small>
+                                    </p>
+                                    {% if course.EnrollmentCount is defined %}
+                                    <p class="card-text mb-0">
+                                        <i class="fas fa-users text-muted me-2"></i>
+                                        <small class="text-muted">{{ course.EnrollmentCount }} students</small>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Course rating simulation -->
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('course_details', course_id=course.CourseID) }}" 
+                               class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-info-circle me-2"></i>View Course Details
+                            </a>
+                        </div>
                     </div>
                 </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <div class="alert alert-info d-flex align-items-center">
+                    <i class="fas fa-info-circle me-3 fa-lg"></i>
+                    <div>No courses available at the moment.</div>
+                </div>
             </div>
-        {% endfor %}
-    {% else %}
-        <div class="col">
-            <div class="alert alert-info">
-                No courses available at the moment.
-            </div>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
+    
+    <div class="text-center mt-4">
+        <a href="{{ url_for('browse_courses') }}" class="btn btn-primary">
+            <i class="fas fa-th-list me-2"></i>Browse All Courses
+        </a>
+    </div>
 </div>
+
+<style>
+    .course-card {
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    .icon-pulse {
+        transition: all 0.3s ease;
+    }
+    
+    .course-card:hover .icon-pulse {
+        transform: scale(1.1);
+    }
+    
+    .card-img-top {
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-image: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(240,240,245,1) 100%);
+    }
+</style>
 
 <!-- Add after featured courses section -->
 <div class="row my-5 py-3 bg-light rounded-3">
