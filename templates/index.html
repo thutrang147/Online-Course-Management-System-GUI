@@ -3,45 +3,91 @@
 {% block title %}Home | Online Course Management System{% endblock %}
 
 {% block content %}
-    <div class="jumbotron bg-light p-5 rounded mb-4">
-        <h1 class="display-4">Welcome to the Online Learning System</h1>
-        <p class="lead">An online learning platform that helps you enhance your skills flexibly and effectively.</p>
-        <hr class="my-4">
-        <p>Explore hundreds of quality courses from top instructors.</p>
-        <a class="btn btn-primary btn-lg" href="{{ url_for('browse_courses') }}">Explore Courses</a>
-        {% if not session.get('role') %}
-            <a class="btn btn-outline-primary btn-lg ms-2" href="{{ url_for('register') }}">Register Now</a>
-        {% endif %}
+<!-- Hero Section with learning images -->
+<div class="bg-primary bg-gradient text-white py-5 mb-5 rounded-3 shadow">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Expand Your Knowledge</h1>
+                <p class="lead">Discover courses taught by experts and enhance your skills with practical learning.</p>
+                <a href="{{ url_for('browse_courses') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-book-open me-2"></i>Explore Courses
+                </a>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block text-center">
+                <img src="https://img.freepik.com/free-vector/online-learning-isometric-concept_1284-17947.jpg" 
+                     alt="Online Learning" class="img-fluid rounded-3 shadow" style="max-height: 350px;">
+            </div>
+        </div>
     </div>
+</div>
 
-    <h2 class="mb-4">Featured Courses</h2>
-    <div class="row">
-        {% if courses %}
-            {% for course in courses %}
-                <div class="col-md-4 mb-4">
-                    <div class="card course-card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ course.CourseName }}</h5>
-                            <p class="card-text">{{ course.Description[:100] ~ '...' if course.Description and course.Description|length > 100 else course.Description }}</p>
-                            <p class="card-text"><small class="text-muted">Instructor: {{ course.InstructorName or 'Not assigned yet' }}</small></p>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-primary">Details</a>
-                        </div>
+<!-- Featured courses section -->
+<h2 class="mb-4"><i class="fas fa-star me-2 text-warning"></i>Featured Courses</h2>
+<div class="row">
+    {% if courses %}
+        {% for course in courses %}
+            <div class="col-md-4 mb-4">
+                <div class="card course-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ course.CourseName }}</h5>
+                        <p class="card-text">{{ course.Description[:100] ~ '...' if course.Description and course.Description|length > 100 else course.Description }}</p>
+                        <p class="card-text"><small class="text-muted">Instructor: {{ course.InstructorName or 'Not assigned yet' }}</small></p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-primary">Details</a>
                     </div>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="col">
-                <div class="alert alert-info">
-                    No courses available at the moment.
-                </div>
             </div>
-        {% endif %}
-    </div>
+        {% endfor %}
+    {% else %}
+        <div class="col">
+            <div class="alert alert-info">
+                No courses available at the moment.
+            </div>
+        </div>
+    {% endif %}
+</div>
 
-    <div class="text-center mt-4">
-        <a href="{{ url_for('browse_courses') }}" class="btn btn-outline-primary">View All Courses</a>
+<!-- Add after featured courses section -->
+<div class="row my-5 py-3 bg-light rounded-3">
+    <div class="col-12 text-center mb-4">
+        <h2>Why Choose Us?</h2>
     </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <img src="https://img.freepik.com/free-vector/online-certification-illustration_23-2148575636.jpg" 
+                     alt="Quality Content" class="mb-3" style="height: 150px">
+                <h5>Quality Content</h5>
+                <p class="text-muted">All courses are meticulously prepared by leading industry experts.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <img src="https://img.freepik.com/free-vector/education-learning-concept_74855-13103.jpg" 
+                     alt="Learn Anywhere" class="mb-3" style="height: 150px">
+                <h5>Learn Anywhere</h5>
+                <p class="text-muted">Access your courses from desktop, mobile or tablet devices.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <img src="https://img.freepik.com/free-vector/community-concept-illustration_114360-1245.jpg" 
+                     alt="Community" class="mb-3" style="height: 150px">
+                <h5>Supportive Community</h5>
+                <p class="text-muted">Connect with other learners and get support from our instructors.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <a href="{{ url_for('browse_courses') }}" class="btn btn-outline-primary">View All Courses</a>
+</div>
 
 {% endblock %}
