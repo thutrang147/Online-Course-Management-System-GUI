@@ -380,3 +380,46 @@ def get_enrollment_logs():
         if connection and connection.is_connected():
             connection.close()
     return logs_data
+
+def search_learner_enrollments(learner_id, search_term):
+    """Search within a learner's enrolled courses."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    search_pattern = f'%{search_term}%'
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = """
+                SELECT e.*, c.CourseName, c.CourseDescription,
+                       i.InstructorName,
+                       (SELECT COUNT(*) FROM LectureViews lv 
+                        JOIN Lectures l ON lv.LectureID = l.LectureID 
+                        WHERE lv.LearnerID = e.LearnerID AND l.CourseID = e.CourseID) AS ViewedLectures,
+                       (SELECT COUNT(*) FROM Lectures l WHERE l.CourseID = e.CourseID) AS TotalLectures
+                FROM Enrollments e
+                JOIN Courses c ON e.CourseID = c.CourseID
+                LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+                WHERE e.LearnerID = %s 
+                  AND (c.CourseName LIKE %s
+                       OR c.CourseDescription LIKE %s
+                       OR i.InstructorName LIKE %s)
+                ORDER BY e.EnrollmentDate DESC
+            """
+            cursor.execute(query, (learner_id, search_pattern, search_pattern, search_pattern))
+            enrollments = cursor.fetchall()
+            
+            # Calculate progress percentage for each course
+            for enrollment in enrollments:
+                total = enrollment['TotalLectures'] or 0
+                viewed = enrollment['ViewedLectures'] or 0
+                enrollment['ProgressPercentage'] = int((viewed / total * 100) if total > 0 else 0)
+                
+            return enrollments
+    except Error as e:
+        print(f"Error searching learner enrollments: {e}")
+        return []
+    finally:
+        connection.close()
+

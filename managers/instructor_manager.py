@@ -264,3 +264,50 @@ def get_all_instructors_workload():
         return []
     finally:
         connection.close()
+
+def search_instructors(search_term):
+    """Search instructors by ID, name, email or expertise."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    search_pattern = f'%{search_term}%'
+    
+    try:
+        
+        try:
+            instructor_id = int(search_term)
+            id_search = True
+        except ValueError:
+            id_search = False
+        
+        with connection.cursor(dictionary=True) as cursor:
+            if id_search:
+                query = """
+                    SELECT i.InstructorID, i.InstructorName, u.Email, i.Expertise
+                    FROM Instructors i
+                    JOIN Users u ON i.UserID = u.UserID
+                    WHERE i.InstructorID = %s 
+                       OR i.InstructorName LIKE %s
+                       OR u.Email LIKE %s
+                       OR i.Expertise LIKE %s
+                    ORDER BY i.InstructorName
+                """
+                cursor.execute(query, (instructor_id, search_pattern, search_pattern, search_pattern))
+            else:
+                query = """
+                    SELECT i.InstructorID, i.InstructorName, u.Email, i.Expertise
+                    FROM Instructors i
+                    JOIN Users u ON i.UserID = u.UserID
+                    WHERE i.InstructorName LIKE %s
+                       OR u.Email LIKE %s
+                       OR i.Expertise LIKE %s
+                    ORDER BY i.InstructorName
+                """
+                cursor.execute(query, (search_pattern, search_pattern, search_pattern))
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error searching instructors: {e}")
+        return []
+    finally:
+        connection.close()

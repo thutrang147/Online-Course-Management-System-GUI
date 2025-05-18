@@ -300,3 +300,45 @@ def update_learner_progress(learner_id, course_id, progress):
         return False
     finally:
         connection.close()
+
+def search_learners(search_term):
+    """Search learners by ID, name or email."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    search_pattern = f'%{search_term}%'
+    
+    try:
+        try:
+            learner_id = int(search_term)
+            id_search = True
+        except ValueError:
+            id_search = False
+        
+        with connection.cursor(dictionary=True) as cursor:
+            if id_search:
+                query = """
+                    SELECT l.LearnerID, l.LearnerName, u.Email, l.PhoneNumber
+                    FROM Learners l
+                    JOIN Users u ON l.UserID = u.UserID
+                    WHERE l.LearnerID = %s OR l.LearnerName LIKE %s OR u.Email LIKE %s
+                    ORDER BY l.LearnerName
+                """
+                cursor.execute(query, (learner_id, search_pattern, search_pattern))
+            else:
+                query = """
+                    SELECT l.LearnerID, l.LearnerName, u.Email, l.PhoneNumber
+                    FROM Learners l
+                    JOIN Users u ON l.UserID = u.UserID
+                    WHERE l.LearnerName LIKE %s OR u.Email LIKE %s
+                    ORDER BY l.LearnerName
+                """
+                cursor.execute(query, (search_pattern, search_pattern))
+                
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error searching learners: {e}")
+        return []
+    finally:
+        connection.close()

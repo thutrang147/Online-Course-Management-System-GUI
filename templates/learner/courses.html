@@ -4,6 +4,16 @@
 
 {% block content %}
 <div class="container">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" action="{{ url_for('learner_courses') }}" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search your courses" value="{{ request.args.get('search', '') }}">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+        </div>
+    </div>
     <h1 class="mt-4">My Enrolled Courses</h1>
     {% if courses %}
     <ul class="list-group mt-4">

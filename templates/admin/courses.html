@@ -6,6 +6,23 @@
 <div class="container mt-4">
     <h2>Courses</h2>
     <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary mb-3">Add Course</a>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" action="{{ url_for('admin_courses') }}" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search by name, description or instructor" value="{{ request.args.get('search', '') }}">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-sync"></i> Reset
+            </a>
+        </div>
+    </div>
+    
     {% if courses and courses|length > 0 %}
     <table class="table table-bordered table-hover">
         <thead class="table-light">
@@ -23,7 +40,7 @@
                 <td>{{ course.CourseID }}</td>
                 <td>{{ course.CourseName }}</td>
                 <td>
-                    {{ course.Description }}
+                    {{ course.CourseDescription }}
                 </td>
                 <td>
                     {% if course.InstructorName %}

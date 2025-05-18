@@ -176,8 +176,16 @@ def learner_dashboard():
 @role_required(['learner'])
 def learner_courses():
     learner_id = session.get('entity_id')
-    enrolled_courses = enrollment_manager.get_enrollments_by_learner(learner_id)
-    return render_template('learner/courses.html', courses=enrolled_courses)
+    search_term = request.args.get('search', '')
+    
+    if search_term:
+        
+        enrolled_courses = enrollment_manager.search_learner_enrollments(learner_id, search_term)
+    else:
+        
+        enrolled_courses = enrollment_manager.get_enrollments_by_learner(learner_id)
+        
+    return render_template('learner/courses.html', courses=enrolled_courses, search=search_term)
 
 @app.route('/learner/course/<int:course_id>')
 @login_required
@@ -295,10 +303,17 @@ def change_password():
 
 @app.route('/courses')
 def browse_courses():
-    courses = course_manager.list_courses_with_details()
+    search_term = request.args.get('search', '')
+    
+    if search_term:
+        courses = course_manager.search_courses(search_term)
+    else:
+        courses = course_manager.list_courses_with_details()
+        
     print(f"Debug - Courses count: {len(courses) if courses else 0}")
-    print(f"Debug - First course: {courses[0] if courses else 'No courses'}")
-    return render_template('courses.html', courses=courses)
+    if courses and len(courses) > 0:
+        print(f"Debug - First course: {courses[0]}")
+    return render_template('courses.html', courses=courses, search=search_term)
 
 @app.route('/course/<int:course_id>')
 def course_details(course_id):
@@ -523,8 +538,14 @@ def admin_dashboard():
 @login_required
 @role_required(['admin'])
 def admin_learners():
-    learners = learner_manager.list_all_learners()
-    return render_template('admin/learners.html', learners=learners)
+    search_term = request.args.get('search', '')
+    
+    if search_term:
+        learners = learner_manager.search_learners(search_term)
+    else:
+        learners = learner_manager.list_all_learners()
+        
+    return render_template('admin/learners.html', learners=learners, search=search_term)
 
 @app.route('/admin/learner/<int:learner_id>', methods=['GET', 'POST'])
 @login_required
@@ -576,8 +597,14 @@ def admin_learner_detail(learner_id):
 @login_required
 @role_required(['admin'])
 def admin_instructors():
-    instructors = instructor_manager.list_all_instructors()
-    return render_template('admin/instructors.html', instructors=instructors)
+    search_term = request.args.get('search', '')
+    
+    if search_term:
+        instructors = instructor_manager.search_instructors(search_term)
+    else:
+        instructors = instructor_manager.list_all_instructors()
+        
+    return render_template('admin/instructors.html', instructors=instructors, search=search_term)
 
 @app.route('/admin/instructor/<int:instructor_id>', methods=['GET', 'POST'])
 @login_required
@@ -620,8 +647,14 @@ def admin_instructor_detail(instructor_id):
 @login_required
 @role_required(['admin'])
 def admin_courses():
-    courses = course_manager.list_courses_with_details()
-    return render_template('admin/courses.html', courses=courses)
+    search_term = request.args.get('search', '')
+    
+    if search_term:
+        courses = course_manager.search_courses(search_term)
+    else:
+        courses = course_manager.list_all_courses()
+        
+    return render_template('admin/courses.html', courses=courses, search=search_term)
 
 @app.route('/admin/course/<int:course_id>', methods=['GET', 'POST'])
 @login_required
