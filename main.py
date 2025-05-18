@@ -366,6 +366,28 @@ def enroll_course(course_id):
         
     return redirect(url_for('course_details', course_id=course_id))
 
+@app.route('/unenroll/<int:course_id>')
+@login_required
+@role_required(['learner'])
+def unenroll_course(course_id):
+    learner_id = session.get('entity_id')
+    
+    # Check if user is enrolled in this course
+    enrollment = enrollment_manager.get_enrollment(learner_id, course_id)
+    if not enrollment:
+        flash('You are not enrolled in this course.', 'warning')
+        return redirect(url_for('learner_courses'))
+    
+    # Unenroll
+    success = learner_manager.unenroll_from_course(learner_id, course_id)
+    
+    if success:
+        flash('You have successfully unenrolled from this course.', 'success')
+    else:
+        flash('Failed to unenroll from the course.', 'danger')
+        
+    return redirect(url_for('learner_courses'))
+
 # === INSTRUCTOR ROUTES ===
 @app.route('/instructor')
 @login_required
