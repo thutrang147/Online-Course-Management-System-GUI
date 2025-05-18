@@ -218,3 +218,51 @@ def delete_course(course_id):
         return False
     finally:
         connection.close()
+
+def search_courses(search_term):
+    """Search courses by name, description, instructor name or ID."""
+    connection = create_connection()
+    if not connection:
+        return []
+    
+    search_pattern = f'%{search_term}%'
+    
+    try:
+        try:
+            course_id = int(search_term)
+            id_search = True
+        except ValueError:
+            id_search = False
+            
+        with connection.cursor(dictionary=True) as cursor:
+            if id_search:
+                query = """
+                    SELECT c.CourseID, c.CourseName, c.CourseDescription as Description, 
+                           i.InstructorID, i.InstructorName
+                    FROM Courses c
+                    LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+                    WHERE c.CourseID = %s 
+                       OR c.CourseName LIKE %s
+                       OR c.CourseDescription LIKE %s
+                       OR i.InstructorName LIKE %s
+                    ORDER BY c.CourseName
+                """
+                cursor.execute(query, (course_id, search_pattern, search_pattern, search_pattern))
+            else:
+                query = """
+                    SELECT c.CourseID, c.CourseName, c.CourseDescription as Description, 
+                           i.InstructorID, i.InstructorName
+                    FROM Courses c
+                    LEFT JOIN Instructors i ON c.InstructorID = i.InstructorID
+                    WHERE c.CourseName LIKE %s
+                       OR c.CourseDescription LIKE %s
+                       OR i.InstructorName LIKE %s
+                    ORDER BY c.CourseName
+                """
+                cursor.execute(query, (search_pattern, search_pattern, search_pattern))
+            return cursor.fetchall()
+    except Error as e:
+        print(f"Error searching courses: {e}")
+        return []
+    finally:
+        connection.close()

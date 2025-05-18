@@ -6,6 +6,23 @@
 <div class="container">
     <h1 class="mb-4">Explore Courses</h1>
     
+    <!-- Thêm form tìm kiếm -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" action="{{ url_for('browse_courses') }}" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search by course name, description or instructor" value="{{ request.args.get('search', '') }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('browse_courses') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-sync"></i> Show All
+            </a>
+        </div>
+    </div>
+    
     <div class="row">
         {% if courses %}
             {% for course in courses %}
@@ -37,11 +54,8 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="col-12 text-center">
-                <div class="alert alert-info">
-                    <h4>No courses found.</h4>
-                    <p>There are currently no courses in the system.</p>
-                </div>
+            <div class="col-12">
+                <div class="alert alert-info">No courses found matching your search criteria.</div>
             </div>
         {% endif %}
     </div>
