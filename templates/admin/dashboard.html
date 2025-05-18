@@ -23,6 +23,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 10px 5px; /* Reduce horizontal padding */
+    }
+    
+    .dashboard-card .card-footer a {
+        text-align: center;
+        font-size: 0.9rem; /* Slightly smaller font */
+        line-height: 1.2;
     }
 </style>
 <div class="container">
@@ -36,11 +43,14 @@
         <div class="col-md-3">
             <div class="card text-center bg-primary text-white mb-3 dashboard-card">
                 <div class="card-body">
+                    <i class="fas fa-users fa-2x mb-3"></i>
                     <h2>{{ learner_count }}</h2>
                     <h5>Learners</h5>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('admin_learners') }}" class="text-white">View Details</a>
+                    <a href="{{ url_for('admin_learners') }}" class="text-white">
+                        <i class="fas fa-arrow-right"></i> View Details
+                    </a>
                 </div>
             </div>
         </div>
@@ -48,11 +58,14 @@
         <div class="col-md-3">
             <div class="card text-center bg-success text-white mb-3 dashboard-card">
                 <div class="card-body">
+                    <i class="fas fa-chalkboard-teacher fa-2x mb-3"></i>
                     <h2>{{ instructor_count }}</h2>
                     <h5>Instructors</h5>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('admin_instructors') }}" class="text-white">View Details</a>
+                    <a href="{{ url_for('admin_instructors') }}" class="text-white">
+                        <i class="fas fa-arrow-right"></i> View Details
+                    </a>
                 </div>
             </div>
         </div>
@@ -60,11 +73,14 @@
         <div class="col-md-3">
             <div class="card text-center bg-warning text-white mb-3 dashboard-card">
                 <div class="card-body">
+                    <i class="fas fa-book fa-2x mb-3"></i>
                     <h2>{{ course_count }}</h2>
                     <h5>Courses</h5>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('admin_courses') }}" class="text-white">View Details</a>
+                    <a href="{{ url_for('admin_courses') }}" class="text-white">
+                        <i class="fas fa-arrow-right"></i> View Details
+                    </a>
                 </div>
             </div>
         </div>
@@ -72,11 +88,14 @@
         <div class="col-md-3">
             <div class="card text-center bg-info text-white mb-3 dashboard-card">
                 <div class="card-body">
+                    <i class="fas fa-chart-bar fa-2x mb-3"></i>
                     <h2>{{ enrollment_count }}</h2>
                     <h5>Registrations</h5>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('admin_reports') }}" class="text-white">View WorkLoad and Active Courses</a>
+                    <a href="{{ url_for('admin_reports') }}" class="text-white">
+                        <i class="fas fa-arrow-right"></i> View WorkLoad and Active Courses
+                    </a>
                 </div>
             </div>
         </div>

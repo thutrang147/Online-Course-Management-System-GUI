@@ -1,43 +1,92 @@
 {% extends "base.html" %}
 
-{% block title %}Instructor Dashboard| Course Management System{% endblock %}
+{% block title %}Instructor Dashboard | Course Management System{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container py-4">
+    <!-- Welcome Section with Stats -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>Hello, {{ instructor.InstructorName }}!</h1>
-            <p class="text-muted">Specialization: {{ instructor.Expertise }}</p>
-        </div>
-        <div class="col-md-4 d-flex align-items-start justify-content-end">
-            <a href="{{ url_for('instructor_profile') }}" class="btn btn-outline-primary mt-2">My Profile</a>
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-lg-2 text-center mb-3 mb-lg-0">
+                            <img src="https://img.freepik.com/free-vector/book-concept-illustration_1284-6971.jpg?ga=GA1.1.1652114170.1747547171&semt=ais_hybrid&w=740" 
+                                 class="rounded-circle img-thumbnail shadow-sm" 
+                                 alt="Instructor Profile" 
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                        </div>
+                        <div class="col-lg-7">
+                            <h1 class="mb-1 fw-bold">Hello, {{ instructor.InstructorName }}!</h1>
+                            <p class="text-muted mb-2"><span class="badge bg-light text-primary me-2">Expertise:</span>{{ instructor.Expertise }}</p>
+                            
+                            {% if courses %}
+                            <div class="d-flex align-items-center">
+                                <div class="me-4">
+                                    <span class="d-block text-dark fw-bold fs-4">{{ courses|length }}</span>
+                                    <small class="text-muted">Active Courses</small>
+                                </div>
+                                
+                                {% set total_students = namespace(count=0) %}
+                                {% for course in courses %}
+                                    {% set total_students.count = total_students.count + enrollment_stats.get(course.CourseID, 0) %}
+                                {% endfor %}
+                                
+                                <div>
+                                    <span class="d-block text-success fw-bold fs-4">{{ total_students.count }}</span>
+                                    <small class="text-muted">Total Students</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-3 text-end">
+                            <a href="{{ url_for('instructor_profile') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-cog me-2"></i>My Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Courses Section -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Your courses</h5>
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Your Courses</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if courses %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Course Name</th>
-                                    <th>Number of Learners</th>
-                                    <th>Manage</th>
+                                    <th class="ps-3">Course Name</th>
+                                    <th class="text-center">Students Enrolled</th>
+                                    <th class="text-end pe-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for course in courses %}
                                 <tr>
-                                    <td>{{ course.CourseName }}</td>
-                                    <td>{{ enrollment_stats[course.CourseID] }}</td>
-                                    <td>
-                                        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-primary">View Details</a>
+                                    <td class="ps-3">
+                                        <div>
+                                            <h6 class="mb-1">{{ course.CourseName }}</h6>
+                                            <p class="text-muted small mb-0">{{ course.CourseDescription[:65] }}{% if course.CourseDescription and course.CourseDescription|length > 65 %}...{% endif %}</p>
+                                        </div>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <span class="badge bg-light text-primary p-2 rounded-pill">
+                                            <i class="fas fa-users me-1"></i>
+                                            {{ enrollment_stats[course.CourseID] }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end align-middle pe-3">
+                                        <a href="{{ url_for('instructor_course_detail', course_id=course.CourseID) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit me-1"></i>Manage Course
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -45,8 +94,58 @@
                         </table>
                     </div>
                     {% else %}
-                    <p>You have not been assigned to any courses.</p>
+                    <div class="text-center p-4">
+                        <img src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-626.jpg" 
+                             alt="No courses" class="img-fluid mb-3" style="max-height: 200px;">
+                        <p class="text-muted">You have not been assigned to any courses.</p>
+                    </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips for Instructors -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h5><i class="fas fa-lightbulb text-warning me-2"></i>Teaching Tips</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex">
+                                <div class="me-3 text-primary">
+                                    <i class="fas fa-video fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6>Create Engaging Content</h6>
+                                    <p class="small text-muted mb-0">Use diverse media types to keep students engaged.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex">
+                                <div class="me-3 text-primary">
+                                    <i class="fas fa-comments fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6>Provide Regular Feedback</h6>
+                                    <p class="small text-muted mb-0">Help students understand their progress.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex">
+                                <div class="me-3 text-primary">
+                                    <i class="fas fa-tasks fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6>Include Practice Activities</h6>
+                                    <p class="small text-muted mb-0">Reinforce learning with practical exercises.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

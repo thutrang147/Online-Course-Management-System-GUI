@@ -3,39 +3,101 @@
 {% block title %}Learner Dashboard | Course Management System{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container py-4">
+    <!-- Welcome Section with Stats -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>Hello, {{ learner.LearnerName }}!</h1>
-            <p class="text-muted">This is your learning space.</p>
-            <!-- Add this after the greeting in dashboard.html -->
-            <a href="{{ url_for('learner_profile') }}" class="btn btn-outline-primary mb-3">My Profile</a>
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-lg-2 text-center mb-3 mb-lg-0">
+                            <!-- Replace with student avatar illustration -->
+                            <img src="https://img.freepik.com/free-vector/doodle-cute-girl-student-clipart-reading-book-character-student-back-school-cartoon-design_40876-3288.jpg?ga=GA1.1.1652114170.1747547171&semt=ais_hybrid&w=740" 
+                                 class="rounded-circle img-thumbnail shadow-sm" 
+                                 alt="Student Profile" 
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                        </div>
+                        <div class="col-lg-7">
+                            <h1 class="mb-1 fw-bold">Hello, {{ learner.LearnerName }}!</h1>
+                            <p class="text-muted mb-2 fs-5">Welcome to your personalized learning space.</p>
+                            
+                            {% if enrolled_courses %}
+                            <div class="d-flex align-items-center">
+                                <div class="me-4">
+                                    <span class="d-block text-dark fw-bold fs-4">{{ enrolled_courses|length }}</span>
+                                    <small class="text-muted">Enrolled Courses</small>
+                                </div>
+                                
+                                {% set completed = namespace(count=0) %}
+                                {% for course in enrolled_courses %}
+                                    {% if course.ProgressPercentage == 100 %}
+                                        {% set completed.count = completed.count + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <div>
+                                    <span class="d-block text-success fw-bold fs-4">{{ completed.count }}</span>
+                                    <small class="text-muted">Completed Courses</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-3 text-end">
+                            <a href="{{ url_for('learner_profile') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-cog me-2"></i>My Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
+    <!-- Enrolled Courses Section -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Your Courses</h5>
+                    <h5 class="mb-0"><i class="fas fa-book-reader me-2"></i>Your Learning Path</h5>
                     <!-- Added button to view all courses -->
                     <a href="{{ url_for('learner_courses') }}" class="btn btn-light btn-sm">View All Courses</a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if enrolled_courses %}
-                    <div class="list-group">
+                    <div class="list-group list-group-flush">
                         {% for course in enrolled_courses %}
-                        <a href="{{ url_for('learner_course_detail', course_id=course.CourseID) }}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">{{ course.CourseName }}</h5>
+                        <a href="{{ url_for('learner_course_detail', course_id=course.CourseID) }}" class="list-group-item list-group-item-action p-3">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">{{ course.CourseName }}</h5>
+                                    <p class="text-muted mb-1 small">{{ course.InstructorName or 'No instructor assigned' }}</p>
+                                    
+                                    <div class="progress mt-2" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" 
+                                             style="width: {{ course.ProgressPercentage }}%;" 
+                                             aria-valuenow="{{ course.ProgressPercentage }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <small>{{ course.ProgressPercentage }}% complete</small>
+                                        <small>{{ course.TotalLectures }} lectures</small>
+                                    </div>
+                                </div>
+                                <span class="ms-3">
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </span>
                             </div>
-                            <!-- Display progress and lectures section -->
                         </a>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <p>You haven't enrolled in any courses yet.</p>
-                    <a href="{{ url_for('browse_courses') }}" class="btn btn-primary">Browse Courses</a>
+                    <div class="text-center p-4">
+                        <img src="https://img.freepik.com/free-vector/empty-concept-illustration_114360-1188.jpg" 
+                             alt="No courses" class="img-fluid mb-3" style="max-height: 200px;">
+                        <p class="text-muted">You haven't enrolled in any courses yet.</p>
+                        <a href="{{ url_for('browse_courses') }}" class="btn btn-primary">Browse Courses</a>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -43,25 +105,37 @@
     </div>
 
     {% if recommended_courses %}
+    <!-- Recommended Courses Section -->
     <div class="row">
-        <div class="col-md-12">
-            <h3>Recommended Courses</h3>
-            <div class="row">
-                {% for course in recommended_courses %}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ course.CourseName }}</h5>
-                            <p class="card-text">{{ course.CourseDescription[:100] }}{% if course.CourseDescription and course.CourseDescription|length > 100 %}...{% endif %}</p>
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-outline-primary">View Details</a>
-                        </div>
-                    </div>
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>Recommended For You</h3>
+        </div>
+        
+        {% for course in recommended_courses %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm course-card">
+                <div class="card-img-top bg-light text-center p-4">
+                    {% set icons = [
+                        'https://img.freepik.com/free-vector/online-tutorials-concept_23-2148529257.jpg', 
+                        'https://img.freepik.com/free-vector/people-analyzing-growth-charts_23-2148866843.jpg',
+                        'https://img.freepik.com/free-vector/teaching-concept-illustration_114360-1708.jpg',
+                        'https://img.freepik.com/free-vector/student-with-laptop-studying-online-course_74855-5293.jpg'
+                    ] %}
+                    {% set random_icon = icons|random %}
+                    <img src="{{ random_icon }}" alt="{{ course.CourseName }}" class="img-fluid" style="height: 120px; object-fit: contain;">
                 </div>
-                {% endfor %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ course.CourseName }}</h5>
+                    <p class="card-text text-muted small">{{ course.CourseDescription[:100] }}{% if course.CourseDescription and course.CourseDescription|length > 100 %}...{% endif %}</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{{ url_for('course_details', course_id=course.CourseID) }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-info-circle me-1"></i>View Details
+                    </a>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
     {% endif %}
 </div>

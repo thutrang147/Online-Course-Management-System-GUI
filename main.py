@@ -491,6 +491,24 @@ def instructor_edit_lecture(lecture_id):
                 flash('Failed to update the lecture.', 'danger')
     return render_template('instructor/edit_lecture.html', lecture=lecture, course=course)
 
+@app.route('/instructor/course/<int:course_id>/students')
+@login_required
+@role_required(['instructor'])
+def instructor_course_students(course_id):
+    # Check if course belongs to this instructor
+    instructor_id = session.get('entity_id')
+    course = course_manager.get_course_by_id(course_id)
+    
+    if not course or course['InstructorID'] != instructor_id:
+        flash('You do not have permission to view students for this course.', 'danger')
+        return redirect(url_for('instructor_dashboard'))
+    
+    # Get enrollments for this course
+    enrollments = enrollment_manager.get_detailed_enrollments_by_course(course_id)
+    
+    return render_template('instructor/course_students.html', 
+                          course=course, 
+                          enrollments=enrollments)
 
 @app.route('/instructor/profile', methods=['GET', 'POST'])
 @login_required
