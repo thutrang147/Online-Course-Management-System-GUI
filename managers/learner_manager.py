@@ -147,17 +147,43 @@ def list_all_learners():
         connection.close()
 
 def delete_learner(learner_id):
-    """Delete a learner from the Learners table."""
+    """Delete a learner and their user account."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
-        with connection.cursor() as cursor:
-            query = "DELETE FROM Learners WHERE LearnerID = %s"
-            cursor.execute(query, (learner_id,))
-            connection.commit()
-            return cursor.rowcount > 0
+        connection.start_transaction()
+        
+        # Get the UserID first
+        with connection.cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT UserID FROM Learners WHERE LearnerID = %s", (learner_id,))
+            result = cursor.fetchone()
+            
+            if not result or 'UserID' not in result:
+                connection.rollback()
+                return False
+                
+            user_id = result['UserID']
+            
+            # Delete related records first
+            # Delete lecture views
+            cursor.execute("DELETE FROM LectureViews WHERE LearnerID = %s", (learner_id,))
+            
+            # Delete enrollments
+            cursor.execute("DELETE FROM Enrollments WHERE LearnerID = %s", (learner_id,))
+            
+            # Delete from Learners table
+            cursor.execute("DELETE FROM Learners WHERE LearnerID = %s", (learner_id,))
+            
+            # Then delete the User record
+            cursor.execute("DELETE FROM Users WHERE UserID = %s", (user_id,))
+            
+        connection.commit()
+        return True
+        
     except Error as e:
+        connection.rollback()
         print(f"Error deleting learner: {e}")
         return False
     finally:
@@ -244,36 +270,41 @@ def enroll_in_course(learner_id, course_id):
         connection.close()
 
 def unenroll_from_course(learner_id, course_id):
-    """Unenroll a learner from a specific course."""
+    """Unenroll a learner from a specific course and delete all lecture views."""
     connection = create_connection()
     if not connection:
         return False
+    
     try:
+        connection.start_transaction()
+        
         with connection.cursor() as cursor:
-            # First, get all lecture IDs for this course
-            course_lectures_query = "SELECT LectureID FROM Lectures WHERE CourseID = %s"
-            cursor.execute(course_lectures_query, (course_id,))
-            lecture_ids = [row[0] for row in cursor.fetchall()]
+            # Delete lecture views for this course
+            cursor.execute("""
+                DELETE lv FROM LectureViews lv
+                JOIN Lectures l ON lv.LectureID = l.LectureID
+                WHERE lv.LearnerID = %s AND l.CourseID = %s
+            """, (learner_id, course_id))
             
-            # Delete lecture view records if there are lectures
-            if lecture_ids:
-                # Delete all lecture views for this learner in this course
-                delete_views_query = "DELETE FROM LectureViews WHERE LearnerID = %s AND LectureID IN ({})".format(
-                    ','.join(['%s'] * len(lecture_ids))
-                )
-                cursor.execute(delete_views_query, (learner_id, *lecture_ids))
-                print(f"Deleted {cursor.rowcount} lecture view records")
+            # Delete enrollment
+            cursor.execute("DELETE FROM Enrollments WHERE LearnerID = %s AND CourseID = %s", 
+                          (learner_id, course_id))
             
-            # Now delete the enrollment record
-            query = "DELETE FROM Enrollments WHERE LearnerID = %s AND CourseID = %s"
-            cursor.execute(query, (learner_id, course_id))
-            connection.commit()
-            return cursor.rowcount > 0
+            if cursor.rowcount > 0:
+                connection.commit()
+                return True
+            else:
+                connection.rollback()
+                return False
+                
     except Error as e:
+        if connection:
+            connection.rollback()
         print(f"Error unenrolling from course: {e}")
         return False
     finally:
-        connection.close()
+        if connection:
+            connection.close()
 
 def get_learner_progress(learner_id, course_id):
     """Retrieve the progress of a learner in a specific course."""

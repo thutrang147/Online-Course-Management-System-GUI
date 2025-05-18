@@ -148,6 +148,9 @@ def delete_instructor(instructor_id):
                 
             user_id = result['UserID']
             
+            # Handle courses assigned to this instructor
+            cursor.execute("UPDATE Courses SET InstructorID = NULL WHERE InstructorID = %s", (instructor_id,))
+            
             # Delete from Instructors first due to foreign key constraint
             cursor.execute("DELETE FROM Instructors WHERE InstructorID = %s", (instructor_id,))
             
