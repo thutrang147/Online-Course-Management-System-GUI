@@ -1,6 +1,7 @@
 # SQL Project: Online Course Management System
 
 This is a comprehensive online course management system built with Flask and MySQL. The system provides different interfaces for learners, instructors, and administrators to manage courses, track progress, and interact with educational content.
+
 <img src="images/image.png" alt="image" width="500" />
 <img src="images/image-1.png" alt="image-1" width="500" />
 <img src="images/image1.png" alt="image1" width="500" />
